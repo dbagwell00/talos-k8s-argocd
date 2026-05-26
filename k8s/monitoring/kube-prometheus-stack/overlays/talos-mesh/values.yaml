@@ -75,6 +75,15 @@ alertmanager:
 
 # Prometheus Operator
 prometheusOperator:
+  # CPU headroom so the operator can answer its 1s liveness probe during the
+  # initial heavy reconcile (otherwise it gets probe-killed mid-reconcile -> crashloop).
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
   # Add tolerations for control-plane nodes (talos-mesh)
   tolerations:
     - key: node-role.kubernetes.io/control-plane
