@@ -27,6 +27,15 @@ configuration:
 
   volumeSnapshotLocation: []
 
+  # Cap Kopia repo-maintenance jobs so they can't saturate a node's CPU.
+  repositoryMaintenanceJob:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1500m"
+      memory: 2Gi
+
 deployNodeAgent: true
 
 nodeAgent:
