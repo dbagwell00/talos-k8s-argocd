@@ -47,6 +47,8 @@ Components are rendered with Kustomize; Helm-based components use Kustomize's na
 | apps | filebrowser | cilium | nginx SMB file browser |
 | monitoring | loki | cilium | Log store (Loki, single-binary) |
 | monitoring | promtail | cilium | Log shipper + UniFi syslog receiver |
+| monitoring | grafana-dashboards | cilium | UniFi + Windows-exporter dashboard ConfigMaps |
+| monitoring | logging-services | cilium | External LoadBalancer Services (Loki / syslog) |
 
 ## Secrets
 
