@@ -1,0 +1,8 @@
+# Locally inflated Helm charts (ArgoCD renders these server-side via kustomize --enable-helm)
+charts/
+**/charts/
+
+# Vault init output must NEVER be committed
+*.unseal
+*vault-init*
+*.recovery-keys

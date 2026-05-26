@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+- name: external-secrets
+  repo: https://charts.external-secrets.io
+  version: 0.9.11
+  releaseName: external-secrets
+  namespace: external-secrets
+  valuesInline:
+    installCRDs: true
+    # talos-mesh is all control-plane — tolerate the taint on all components
+    tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    webhook:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    certController:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+resources:
+- namespace.yaml
+- clustersecretstore.yaml

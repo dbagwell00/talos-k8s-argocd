@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: talos-appset
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        directories:
+          - path: 'k8s/*/*/overlays/*'
+          - path: 'k8s/*/*/overlays/disable'
+            exclude: true
+        repoURL: https://github.com/dbagwell00/talos-k8s-argocd
+        revision: main
+  goTemplate: true
+  goTemplateOptions: [missingkey=error]
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: false
+  template:
+    metadata:
+      # <cluster>-<component>, e.g. talos-mesh-vault
+      name: '{{ index .path.segments 4 }}-{{ index .path.segments 2 }}'
+    spec:
+      destination:
+        # overlay dir name must match an ArgoCD-registered cluster name
+        name: '{{ index .path.segments 4 }}'
+        namespace: default
+      project: default
+      source:
+        path: '{{ .path.path }}'
+        repoURL: https://github.com/dbagwell00/talos-k8s-argocd
+        targetRevision: main
+      ignoreDifferences:
+      - group: gateway.networking.k8s.io
+        kind: '*'
+        jsonPointers:
+        - /spec
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

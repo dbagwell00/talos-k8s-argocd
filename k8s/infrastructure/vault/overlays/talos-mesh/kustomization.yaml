@@ -1,0 +1,59 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Rendered server-side by ArgoCD (kustomize build --enable-helm).
+# Chart pulled from the HashiCorp repo at sync time — not vendored.
+helmCharts:
+- name: vault
+  repo: https://helm.releases.hashicorp.com
+  version: 0.28.0
+  releaseName: vault
+  namespace: vault
+  valuesInline:
+    server:
+      ha:
+        enabled: true
+        replicas: 3
+        raft:
+          enabled: true
+          setNodeId: true
+          config: |
+            ui = true
+            listener "tcp" {
+              tls_disable = 1
+              address = "[::]:8200"
+              cluster_address = "[::]:8201"
+            }
+            storage "raft" {
+              path = "/vault/data"
+            }
+            service_registration "kubernetes" {}
+      dataStorage:
+        enabled: true
+        size: 10Gi
+        storageClass: ceph-rbd
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 250m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+      # talos-mesh is all control-plane — tolerate the taint
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    ui:
+      enabled: true
+    injector:
+      enabled: true
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+resources:
+- namespace.yaml
+- gateway.yaml
+- certificate.yaml
