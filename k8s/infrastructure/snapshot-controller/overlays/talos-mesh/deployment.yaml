@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snapshot-controller
+  namespace: kube-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: snapshot-controller
+  template:
+    metadata:
+      labels:
+        app: snapshot-controller
+    spec:
+      serviceAccountName: snapshot-controller
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      containers:
+      - name: snapshot-controller
+        image: registry.k8s.io/sig-storage/snapshot-controller:v8.2.0
+        args:
+        - --v=2
+        - --leader-election=true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
