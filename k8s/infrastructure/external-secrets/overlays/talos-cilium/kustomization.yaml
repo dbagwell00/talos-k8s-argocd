@@ -27,4 +27,5 @@ helmCharts:
 
 resources:
 - namespace.yaml
+- vault-token-reviewer.yaml
 - clustersecretstore.yaml
