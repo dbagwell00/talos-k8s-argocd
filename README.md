@@ -40,6 +40,7 @@ Components are rendered with Kustomize; Helm-based components use Kustomize's na
 | infrastructure | gateway-api | mesh | Gateway API CRDs |
 | infrastructure | snapshot-controller | both | CSI VolumeSnapshot controller |
 | infrastructure | network-policies | mesh | CiliumNetworkPolicies |
+| infrastructure | smb-csi | cilium | SMB CSI driver + PVs · Vault `secret/samba` |
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
