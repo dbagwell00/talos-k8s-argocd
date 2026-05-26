@@ -1,0 +1,647 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unifi-syslog-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  unifi-syslog.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 1,
+          "panels": [],
+          "title": "Overview",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"}[$__range]))",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Total Logs",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"IN=|OUT=\" !~ \"DPT=514 |DPT=3100 \" [$__range]))",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Firewall Events",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"(?i)sta|wifi|association\"[$__range]))",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "WiFi Events",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+          "id": 5,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\", facility=\"daemon\"} |~ \"(?i)dhcp\"[$__range]))",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "DHCP Events",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+          "id": 6,
+          "panels": [],
+          "title": "Firewall Analytics",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "displayName": "${__field.labels.direction}",
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+          "id": 20,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum by (direction) (count_over_time({job=\"syslog\"} |~ \"IN=|OUT=\" !~ \"DPT=514 |DPT=3100 \" | regexp \"DESCR=\\\"(?P<direction>[^\\\"]+)\\\"\" [$__range]))",
+              "instant": true,
+              "legendFormat": "{{direction}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Traffic by Rule",
+          "type": "piechart"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "displayName": "${__field.labels.src}",
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+          "id": 21,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"] },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "topk(10, sum by (src) (count_over_time({job=\"syslog\"} |~ \"SRC=192\\\\.168\\\\.\" !~ \"DPT=514 |DPT=3100 \" | regexp \"SRC=(?P<src>192\\\\.168\\\\.[0-9]+\\\\.[0-9]+)\" [$__range])))",
+              "instant": true,
+              "legendFormat": "{{src}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Top Source IPs",
+          "type": "piechart"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+            },
+            "overrides": [
+              { "matcher": { "id": "byFrameRefID", "options": "A" }, "properties": [{ "id": "displayName", "value": "SMB (445)" }] },
+              { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "displayName", "value": "K8s API (6443)" }] },
+              { "matcher": { "id": "byFrameRefID", "options": "C" }, "properties": [{ "id": "displayName", "value": "HTTP (80)" }] },
+              { "matcher": { "id": "byFrameRefID", "options": "D" }, "properties": [{ "id": "displayName", "value": "HTTPS (443)" }] },
+              { "matcher": { "id": "byFrameRefID", "options": "E" }, "properties": [{ "id": "displayName", "value": "Ceph (68xx)" }] },
+              { "matcher": { "id": "byFrameRefID", "options": "F" }, "properties": [{ "id": "displayName", "value": "qBittorrent (9080)" }] }
+            ]
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+          "id": 22,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"] },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"DPT=445 \" [$__range]))",
+              "instant": true,
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"DPT=6443 \" [$__range]))",
+              "instant": true,
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"DPT=80 \" [$__range]))",
+              "instant": true,
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"DPT=443 \" [$__range]))",
+              "instant": true,
+              "refId": "D"
+            },
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"DPT=68[0-9][0-9] \" [$__range]))",
+              "instant": true,
+              "refId": "E"
+            },
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"DPT=9080 \" [$__range]))",
+              "instant": true,
+              "refId": "F"
+            }
+          ],
+          "title": "Top Destination Ports",
+          "type": "piechart"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+          "id": 23,
+          "panels": [],
+          "title": "Firewall Logs",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+          "id": 7,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\"} |~ \"IN=|OUT=\"",
+              "refId": "A"
+            }
+          ],
+          "title": "Firewall Rules (Gateway)",
+          "type": "logs"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+          "id": 24,
+          "panels": [],
+          "title": "Blocked Traffic",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 24 },
+          "id": 25,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({job=\"syslog\"} |~ \"-D-\" [$__range]))",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Blocked Events",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "displayName": "${__field.labels.rule}",
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 24 },
+          "id": 26,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum by (rule) (count_over_time({job=\"syslog\"} |~ \"-D-\" | regexp \"DESCR=\\\"(?P<rule>[^\\\"]+)\\\"\" [$__range]))",
+              "instant": true,
+              "legendFormat": "{{rule}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Blocked by Rule",
+          "type": "piechart"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "displayName": "${__field.labels.src}",
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 24 },
+          "id": 27,
+          "options": {
+            "displayLabels": ["name", "value"],
+            "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"] },
+            "pieType": "pie",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "topk(10, sum by (src) (count_over_time({job=\"syslog\"} |~ \"-D-\" |~ \"SRC=192\\\\.168\\\\.\" | regexp \"SRC=(?P<src>192\\\\.168\\\\.[0-9]+\\\\.[0-9]+)\" [$__range])))",
+              "instant": true,
+              "legendFormat": "{{src}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Top Blocked Source IPs",
+          "type": "piechart"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+          "id": 28,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\"} |~ \"-D-\"",
+              "refId": "A"
+            }
+          ],
+          "title": "Blocked Traffic Logs",
+          "type": "logs"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+          "id": 8,
+          "panels": [],
+          "title": "WiFi Events",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 41 },
+          "id": 9,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\"} |~ \"(?i)sta|association|disassociation|connected|disconnected\"",
+              "refId": "A"
+            }
+          ],
+          "title": "WiFi Client Events (APs)",
+          "type": "logs"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+          "id": 10,
+          "panels": [],
+          "title": "DHCP Events",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 50 },
+          "id": 11,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\", facility=\"daemon\"} |~ \"(?i)dhcp\"",
+              "refId": "A"
+            }
+          ],
+          "title": "DHCP Leases",
+          "type": "logs"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 58 },
+          "id": 12,
+          "panels": [],
+          "title": "All Logs by Host",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 59 },
+          "id": 13,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\", host=\"packetsgohere\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Gateway (packetsgohere)",
+          "type": "logs"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 59 },
+          "id": 14,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\", host=~\"Apartment|Livingroom\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Access Points",
+          "type": "logs"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 67 },
+          "id": 15,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{job=\"syslog\", host=~\"USW.*\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Switches",
+          "type": "logs"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["unifi", "syslog", "network"],
+      "templating": {
+        "list": [
+          {
+            "current": {},
+            "datasource": { "type": "loki", "uid": "loki" },
+            "definition": "label_values({job=\"syslog\"}, host)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Host",
+            "multi": true,
+            "name": "host",
+            "options": [],
+            "query": "label_values({job=\"syslog\"}, host)",
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {},
+            "datasource": { "type": "loki", "uid": "loki" },
+            "definition": "label_values({job=\"syslog\"}, facility)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Facility",
+            "multi": true,
+            "name": "facility",
+            "options": [],
+            "query": "label_values({job=\"syslog\"}, facility)",
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": { "from": "now-1h", "to": "now" },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Unifi Network Logs",
+      "uid": "unifi-syslog",
+      "version": 1,
+      "weekStart": ""
+    }
