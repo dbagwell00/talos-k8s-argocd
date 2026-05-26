@@ -1,0 +1,134 @@
+# Global settings
+fullnameOverride: "prom"
+
+# Prometheus configuration
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "45GB"
+
+    # Cluster identification
+    externalLabels:
+      cluster: talos-mesh
+
+    # Storage for Prometheus TSDB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ceph-rbd
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+
+    # Fix CephFS permissions (fsGroup not applied on CephFS mounts)
+    initContainers:
+      - name: fix-permissions
+        image: busybox:1.36
+        command: ["sh", "-c", "chown -R 1000:2000 /prometheus"]
+        volumeMounts:
+          - name: prometheus-prom-prometheus-db
+            mountPath: /prometheus
+            subPath: prometheus-db
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+    # Add tolerations for control-plane nodes (talos-mesh)
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    # Remote write to central Prometheus (federation)
+    remoteWrite:
+      - url: http://192.168.4.120:9090/api/v1/write
+        queueConfig:
+          capacity: 10000
+          maxShards: 10
+          minShards: 1
+          maxSamplesPerSend: 5000
+          batchSendDeadline: 5s
+          minBackoff: 30ms
+          maxBackoff: 100ms
+
+  # LoadBalancer service for Prometheus
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.6.120
+
+# Grafana configuration
+grafana:
+  enabled: false
+
+# AlertManager configuration
+alertmanager:
+  enabled: false
+
+# Prometheus Operator
+prometheusOperator:
+  # Add tolerations for control-plane nodes (talos-mesh)
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  admissionWebhooks:
+    patch:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
+# Node exporter (metrics from each node)
+nodeExporter:
+  enabled: true
+  # Add labels required by Kyverno policy
+  podLabels:
+    app: prometheus-node-exporter
+    env: production
+
+# kube-state-metrics (cluster object metrics)
+kubeStateMetrics:
+  enabled: true
+  # Add labels required by Kyverno policy
+  podLabels:
+    app: kube-state-metrics
+    env: production
+  # Add tolerations for control-plane nodes (talos-mesh)
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+# Default service monitors and rules
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: true
+    general: true
+    k8s: true
+    kubeApiserver: true
+    kubeApiserverAvailability: true
+    kubeApiserverSlos: true
+    kubelet: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: true
+    kubeStateMetrics: true
+    network: true
+    node: true
+    prometheus: true
+    prometheusOperator: true

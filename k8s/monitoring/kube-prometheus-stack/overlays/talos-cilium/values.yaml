@@ -1,0 +1,427 @@
+# Global settings
+fullnameOverride: "prom"
+
+# Prometheus configuration
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "45GB"
+
+    # Cluster identification
+    externalLabels:
+      cluster: talos-cilium
+
+    # Storage for Prometheus TSDB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ceph-cephfs
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+
+    # Fix CephFS permissions (fsGroup not applied on CephFS mounts)
+    initContainers:
+      - name: fix-permissions
+        image: busybox:1.36
+        command: ["sh", "-c", "chown -R 1000:2000 /prometheus"]
+        volumeMounts:
+          - name: prometheus-prom-prometheus-db
+            mountPath: /prometheus
+            subPath: prometheus-db
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+    # Add tolerations for control-plane nodes (talos-mesh)
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+    # Enable remote-write receiver (for federation from other clusters)
+    additionalArgs:
+      - name: web.enable-remote-write-receiver
+
+    # Scrape Cilium agent, Hubble, and Cilium operator
+    additionalScrapeConfigs:
+      - job_name: 'cilium-agent'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - kube-system
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_k8s_app]
+            action: keep
+            regex: cilium
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+          - source_labels: [__meta_kubernetes_endpoint_address_target_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_endpoint_node_name]
+            target_label: node
+
+      - job_name: 'hubble'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - kube-system
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_k8s_app]
+            action: keep
+            regex: hubble
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: hubble-metrics
+          - source_labels: [__meta_kubernetes_endpoint_address_target_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_endpoint_node_name]
+            target_label: node
+
+      - job_name: 'proxmox-node-exporter'
+        static_configs:
+          - targets:
+            - '192.168.1.230:9100'
+            - '192.168.1.232:9100'
+            - '192.168.1.234:9100'
+            - '192.168.1.236:9100'
+            labels:
+              cluster: proxmox
+
+      - job_name: 'windows-exporter'
+        static_configs:
+          - targets:
+            - '192.168.1.55:9182'
+            labels:
+              cluster: desktop
+
+      - job_name: 'cilium-operator'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - kube-system
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_name]
+            action: keep
+            regex: cilium-operator
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: ${1}:9963
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+
+  # LoadBalancer service for Prometheus
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.4.120
+    annotations:
+      io.cilium/lb-ipam-ips: "192.168.4.120"
+
+# Grafana configuration
+grafana:
+  enabled: true
+  # admin creds from ESO-managed secret (Vault secret/grafana)
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  # Use Ceph RBD for Grafana storage
+  persistence:
+    enabled: true
+    storageClassName: ceph-rbd
+    size: 10Gi
+
+  # LoadBalancer service for Grafana
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.4.121
+    annotations:
+      io.cilium/lb-ipam-ips: "192.168.4.121"
+
+  # Resources
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Add tolerations for control-plane nodes
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+  # Remove stale datasources from previous provisioning
+  deleteDatasources:
+    - name: Prometheus-Cluster
+      orgId: 1
+    - name: Prometheus-Cilium
+      orgId: 1
+
+  # Additional datasources beyond the default "Prometheus" (local)
+  additionalDataSources:
+    - name: Prometheus-Mesh
+      type: prometheus
+      uid: prometheus-mesh
+      access: proxy
+      url: http://192.168.5.20:31026
+      jsonData:
+        timeInterval: 30s
+
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki.monitoring.svc.cluster.local:3100
+      jsonData:
+        maxLines: 1000
+
+  # Dashboard providers
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'cilium'
+          orgId: 1
+          folder: 'Cilium'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/cilium
+        - name: 'loki'
+          orgId: 1
+          folder: 'Loki'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/loki
+        - name: 'infrastructure'
+          orgId: 1
+          folder: 'Infrastructure'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/infrastructure
+
+  # Dashboards
+  dashboards:
+    cilium:
+      cilium-operator:
+        gnetId: 16611
+        revision: 1
+        datasource: Prometheus
+      cilium-agent:
+        gnetId: 16612
+        revision: 1
+        datasource: Prometheus
+      hubble:
+        gnetId: 16613
+        revision: 1
+        datasource: Prometheus
+      cilium-l7-http:
+        gnetId: 16615
+        revision: 1
+        datasource: Prometheus
+    infrastructure:
+      node-exporter-full:
+        gnetId: 1860
+        revision: 42
+        datasource: Prometheus
+    loki:
+      loki-logs:
+        gnetId: 13639
+        revision: 2
+        datasource: Loki
+      loki-container-logs:
+        gnetId: 16966
+        revision: 1
+        datasource: Loki
+
+# AlertManager configuration
+alertmanager:
+  enabled: true
+
+  # Use Ceph RBD for AlertManager
+  alertmanagerSpec:
+    # mount the ESO-managed SMTP secret at /etc/alertmanager/secrets/alertmanager-smtp/
+    secrets:
+      - alertmanager-smtp
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ceph-rbd
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  # Alertmanager configuration (SMTP + routing)
+  config:
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'dustin.bagwell@gmail.com'
+      smtp_auth_username: 'dustin.bagwell@gmail.com'
+      smtp_auth_password_file: /etc/alertmanager/secrets/alertmanager-smtp/password
+      smtp_require_tls: true
+      resolve_timeout: 5m
+
+    route:
+      receiver: 'email'
+      group_by: ['alertname', 'namespace', 'cluster']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      routes:
+        # Silence Watchdog (heartbeat alert, always firing)
+        - match:
+            alertname: Watchdog
+          receiver: 'null'
+        # Silence InfoInhibitor
+        - match:
+            alertname: InfoInhibitor
+          receiver: 'null'
+        # Talos false positives - these components exist but don't
+        # expose metrics endpoints on Talos Linux
+        - match_re:
+            alertname: 'KubeControllerManagerDown|KubeSchedulerDown|KubeProxyDown'
+          receiver: 'null'
+        # talos-mesh has no Alertmanager (by design - central alerting)
+        - match:
+            alertname: PrometheusNotConnectedToAlertmanagers
+          receiver: 'null'
+        # Critical alerts - shorter repeat
+        - match:
+            severity: critical
+          receiver: 'email'
+          repeat_interval: 4h
+        # Warning alerts
+        - match:
+            severity: warning
+          receiver: 'email'
+          repeat_interval: 24h
+
+    receivers:
+      - name: 'null'
+      - name: 'email'
+        email_configs:
+          - to: 'dustin.bagwell@gmail.com'
+            send_resolved: true
+            headers:
+              Subject: '{{ .Status | toUpper }} [{{ .CommonLabels.cluster }}] {{ .CommonLabels.alertname }}'
+
+    inhibit_rules:
+      - source_matchers:
+          - severity = critical
+        target_matchers:
+          - severity = warning
+        equal: ['alertname', 'namespace']
+
+  # LoadBalancer service for AlertManager
+  service:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.4.122
+    annotations:
+      io.cilium/lb-ipam-ips: "192.168.4.122"
+
+# Prometheus Operator
+prometheusOperator:
+  # Add tolerations for control-plane nodes (talos-mesh)
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  admissionWebhooks:
+    patch:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
+# Node exporter (metrics from each node)
+nodeExporter:
+  enabled: true
+  # Add labels required by Kyverno policy
+  podLabels:
+    app: prometheus-node-exporter
+    env: production
+
+# kube-state-metrics (cluster object metrics)
+kubeStateMetrics:
+  enabled: true
+  # Add labels required by Kyverno policy
+  podLabels:
+    app: kube-state-metrics
+    env: production
+  # Add tolerations for control-plane nodes (talos-mesh)
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+# Default service monitors and rules
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: true
+    general: true
+    k8s: true
+    kubeApiserver: true
+    kubeApiserverAvailability: true
+    kubeApiserverSlos: true
+    kubelet: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: true
+    kubeStateMetrics: true
+    network: true
+    node: true
+    prometheus: true
+    prometheusOperator: true
