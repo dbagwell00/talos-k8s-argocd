@@ -21,15 +21,29 @@ overlay, named `<cluster>-<component>`. Adding a component is just adding a dire
 no Application boilerplate to maintain.
 
 ```
-k8s/
-  infrastructure/
-    vault/overlays/talos-mesh/                 # HashiCorp Vault (HA, Raft)
-    external-secrets/overlays/talos-mesh/      # External Secrets Operator
-    external-secrets/overlays/talos-cilium/
+k8s/<group>/<component>/
+  base/                      # optional shared manifests
+  overlays/talos-cilium/     # per-cluster overlay (= one Argo CD Application)
+  overlays/talos-mesh/
 ```
 
 Components are rendered with Kustomize; Helm-based components use Kustomize's native
 `helmCharts` (rendered server-side by Argo CD, charts pulled at sync time — not vendored).
+
+## Components
+
+| Group | Component | Cluster(s) | Notes |
+| ----- | --------- | ---------- | ----- |
+| infrastructure | vault | mesh | HashiCorp Vault HA (Raft) · `vault.dlb.im` |
+| infrastructure | external-secrets | both | ESO + `vault-backend` ClusterSecretStore |
+| infrastructure | cert-manager | mesh | Let's Encrypt DNS-01 (Cloudflare) · Vault `secret/cloudflare` |
+| infrastructure | gateway-api | mesh | Gateway API CRDs |
+| infrastructure | snapshot-controller | both | CSI VolumeSnapshot controller |
+| infrastructure | network-policies | mesh | CiliumNetworkPolicies |
+| apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
+| apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
+| apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
+| apps | filebrowser | cilium | nginx SMB file browser |
 
 ## Secrets
 
