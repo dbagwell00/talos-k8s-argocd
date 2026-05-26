@@ -49,6 +49,7 @@ Components are rendered with Kustomize; Helm-based components use Kustomize's na
 | monitoring | promtail | cilium | Log shipper + UniFi syslog receiver |
 | monitoring | grafana-dashboards | cilium | UniFi + Windows-exporter dashboard ConfigMaps |
 | monitoring | logging-services | cilium | External LoadBalancer Services (Loki / syslog) |
+| monitoring | kube-prometheus-stack | both | Prometheus/Grafana/Alertmanager · Vault `secret/grafana` + `secret/alertmanager` (mesh remote-writes to cilium) |
 
 ## Secrets
 

@@ -425,3 +425,14 @@ defaultRules:
     node: true
     prometheus: true
     prometheusOperator: true
+
+# kube-state-metrics subchart: pod-spec values (tolerations, labels) MUST go
+# under the subchart alias, not the kubeStateMetrics toggle above, or they're ignored.
+kube-state-metrics:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  customLabels:
+    app: kube-state-metrics
+    env: production
