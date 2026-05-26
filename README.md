@@ -45,6 +45,8 @@ Components are rendered with Kustomize; Helm-based components use Kustomize's na
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
 | apps | filebrowser | cilium | nginx SMB file browser |
+| monitoring | loki | cilium | Log store (Loki, single-binary) |
+| monitoring | promtail | cilium | Log shipper + UniFi syslog receiver |
 
 ## Secrets
 
