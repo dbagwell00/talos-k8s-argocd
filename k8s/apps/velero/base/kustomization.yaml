@@ -1,15 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-helmCharts:
-- name: velero
-  repo: https://vmware-tanzu.github.io/helm-charts
-  version: 8.2.0
-  releaseName: velero
-  namespace: velero
-  valuesFile: values.yaml
-  includeCRDs: true
-
+# Static, cluster-agnostic resources. The velero Helm chart is inflated per
+# overlay (not here) so each overlay untars into its own charts/ dir and the
+# two overlays don't collide on a shared helm-pull target.
 resources:
 - namespace.yaml
 - externalsecret.yaml

@@ -1,0 +1,61 @@
+initContainers:
+- name: velero-plugin-for-aws
+  image: velero/velero-plugin-for-aws:v1.11.0
+  volumeMounts:
+  - mountPath: /target
+    name: plugins
+
+configuration:
+  backupStorageLocation:
+  - name: default
+    provider: aws
+    bucket: velero
+    credential:
+      name: minio-credentials
+      key: cloud
+    config:
+      region: us-east-1
+      s3ForcePathStyle: "true"
+      s3Url: http://minio.velero.svc:9000
+      publicUrl: http://minio.velero.svc:9000
+
+  uploaderType: kopia
+
+  defaultVolumesToFsBackup: true
+
+  features: EnableCSI
+
+  volumeSnapshotLocation: []
+
+deployNodeAgent: true
+
+nodeAgent:
+  tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+tolerations:
+- key: node-role.kubernetes.io/control-plane
+  operator: Exists
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+kubectl:
+  image:
+    tag: latest
+
+upgradeCRDs: false
+cleanUpCRDs: false
