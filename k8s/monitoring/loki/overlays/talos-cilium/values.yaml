@@ -1,0 +1,99 @@
+# Deploy as single binary (monolithic mode)
+deploymentMode: SingleBinary
+
+loki:
+  # Disable multi-tenancy
+  auth_enabled: false
+
+  # Common config
+  commonConfig:
+    replication_factor: 1
+
+  # Schema config
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+  # Storage config
+  storage:
+    type: filesystem
+
+  # Limits config
+  limits_config:
+    retention_period: 744h  # 31 days
+    ingestion_rate_mb: 10
+    ingestion_burst_size_mb: 20
+    max_streams_per_user: 10000
+    max_entries_limit_per_query: 50000
+
+  # Compactor config for retention
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+
+# Single binary configuration
+singleBinary:
+  replicas: 1
+
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+  persistence:
+    enabled: true
+    storageClass: ceph-rbd
+    size: 50Gi
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# Disable other deployment modes
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+
+# Disable gateway (we'll use direct access)
+gateway:
+  enabled: false
+
+# Disable chunksCache, resultsCache for simplicity
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Service configuration - LoadBalancer for external access
+service:
+  type: LoadBalancer
+  port: 3100
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.125"
+
+# Monitoring
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+  lokiCanary:
+    enabled: false
+
+# Test disabled
+test:
+  enabled: false
+
