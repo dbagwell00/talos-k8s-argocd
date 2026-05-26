@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vpn-gateway
+  name: vpn-gateway
+  namespace: vpn-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vpn-gateway
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/vpn-gateway-network
+      labels:
+        app: vpn-gateway
+    spec:
+      containers:
+      - env:
+        - name: VPN_SERVICE_PROVIDER
+          value: nordvpn
+        - name: VPN_TYPE
+          value: wireguard
+        - name: WIREGUARD_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: private-key
+              name: nordvpn-creds
+        - name: SERVER_COUNTRIES
+          value: United States
+        - name: FIREWALL_OUTBOUND_SUBNETS
+          value: 192.168.3.0/24,10.244.0.0/16,10.96.0.0/12
+        - name: FIREWALL_VPN_INPUT_PORTS
+          value: "8000"
+        - name: VPN_INTERFACE
+          value: tun0
+        - name: FIREWALL_INPUT_PORTS
+          value: "8000"
+        - name: HEALTH_VPN_DURATION_INITIAL
+          value: 60s
+        - name: DOT
+          value: "off"
+        - name: DNS_PLAINTEXT_ADDRESS
+          value: "1.1.1.1"
+        - name: LOG_LEVEL
+          value: info
+        image: qmcgaw/gluetun:latest
+        imagePullPolicy: Always
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - sh
+              - -c
+              - |
+                # Wait for tun0 to exist
+                sleep 5
+                # Set up NAT for client pods
+                iptables -t nat -A POSTROUTING -s 192.168.3.0/24 -o tun0 -j MASQUERADE
+                # Allow forwarding from net1 to tun0
+                iptables -A FORWARD -i net1 -o tun0 -j ACCEPT
+                iptables -A FORWARD -i tun0 -o net1 -m state --state RELATED,ESTABLISHED -j ACCEPT
+        name: gluetun
+        ports:
+        - containerPort: 8000
+          name: control
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /dev/net/tun
+          name: tun
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - |
+          echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 || true
+          echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 || true
+        image: busybox
+        imagePullPolicy: Always
+        name: disable-ipv6
+        securityContext:
+          privileged: true
+      volumes:
+      - hostPath:
+          path: /dev/net/tun
+          type: CharDevice
+        name: tun

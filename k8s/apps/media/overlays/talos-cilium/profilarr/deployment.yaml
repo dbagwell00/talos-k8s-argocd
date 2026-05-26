@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profilarr
+  namespace: media
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profilarr
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-system/vpn-client-network
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: profilarr
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      initContainers:
+      - name: fix-routes
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          ETH0_GW=$(ip route | grep "default.*eth0" | awk '{print $3}')
+          ip route add 10.0.0.0/8 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.4.0/24 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.1.0/24 via $ETH0_GW dev eth0 || true
+          # /32 host routes for node internal IPs - override net1's directly
+          # connected 192.168.3.0/24 route so Cilium LB SNAT replies go
+          # back through eth0 (Cilium) instead of net1 (multus VPN)
+          ip route add 192.168.3.20/32 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.22/32 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.24/32 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.26/32 via $ETH0_GW dev eth0 || true
+          ip route del default via $ETH0_GW dev eth0 || true
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+      containers:
+      - name: profilarr
+        image: santiagosayshey/profilarr:latest
+        ports:
+        - containerPort: 6868
+          name: http
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "997"
+        - name: TZ
+          value: America/Los_Angeles
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: profilarr-config
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+        - 192.168.3.254
+        - 10.96.0.10
+        searches:
+        - media.svc.cluster.local
+        - svc.cluster.local
+        - cluster.local
+        options:
+        - name: ndots
+          value: "5"

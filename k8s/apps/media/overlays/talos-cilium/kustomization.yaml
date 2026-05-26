@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- namespace.yaml
+- pvcs.yaml
+- flaresolverr/deployment.yaml
+- flaresolverr/service.yaml
+- profilarr/deployment.yaml
+- profilarr/service.yaml
+- prowlarr/deployment.yaml
+- prowlarr/service.yaml
+- qbittorrent/deployment.yaml
+- qbittorrent/service.yaml
+- radarr/deployment.yaml
+- radarr/service.yaml
+- sonarr/deployment.yaml
+- sonarr/service.yaml

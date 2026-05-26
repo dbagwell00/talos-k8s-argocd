@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+  namespace: media
+spec:
+  type: LoadBalancer
+  loadBalancerClass: io.cilium/l2-announcer
+  selector:
+    app: radarr
+  ports:
+  - name: http
+    port: 80
+    targetPort: 7878
