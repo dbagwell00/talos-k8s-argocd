@@ -49,6 +49,7 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | infrastructure | cert-manager | mesh | Let's Encrypt DNS-01 (Cloudflare) · Vault `secret/cloudflare` |
 | infrastructure | gateway-api | mesh | Gateway API CRDs |
 | infrastructure | snapshot-controller | both | CSI VolumeSnapshot controller |
+| infrastructure | metrics-server | cilium | Metrics Server v0.8.0 (`kubectl top` / HPA) |
 | infrastructure | network-policies | both | CiliumNetworkPolicies (default-deny + allow rules per namespace) |
 | infrastructure | smb-csi | cilium | SMB CSI driver + PVs · Vault `secret/samba` |
 | infrastructure | multus | both | Multus thick-plugin CNI shim (→ Cilium) + VPN NetworkAttachmentDefinitions (cilium) |
