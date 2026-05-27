@@ -74,8 +74,13 @@ spec:
       selfHeal: true
     syncOptions:
     - CreateNamespace=false
+    # RespectIgnoreDifferences protects the clustermesh/hubble trust certs above
+    # even during a sync (not just in the diff view).
     - RespectIgnoreDifferences=true
-    - ServerSideApply=true
+    # NOTE: no ServerSideApply here. Client-side apply manages these resources
+    # cleanly; enabling SSA caused phantom OutOfSync on the cilium-agent/hubble
+    # ServiceMonitors (managedFields churn, empty `app diff`). cilium-mesh DOES
+    # use SSA because it adopts the large cilium ClusterRole from scratch.
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
