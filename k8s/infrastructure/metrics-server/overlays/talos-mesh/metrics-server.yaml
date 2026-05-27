@@ -185,6 +185,12 @@ spec:
           name: tmp-dir
       nodeSelector:
         kubernetes.io/os: linux
+      # talos-mesh is all control-plane and its nodes ARE tainted (unlike talos-cilium),
+      # so workloads need this toleration to schedule.
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       priorityClassName: system-cluster-critical
       serviceAccountName: metrics-server
       volumes:
