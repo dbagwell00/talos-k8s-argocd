@@ -43,11 +43,39 @@ spec:
     name: hubble-server-certs
     namespace: kube-system
     jsonPointers: ["/data"]
+  # --- clustermesh trust material: hand-made (cilium clustermesh connect),
+  #     irreplaceable from Git, NEVER overwrite ---
+  - kind: Secret
+    name: cilium-clustermesh
+    namespace: kube-system
+    jsonPointers: ["/data"]
+  - kind: Secret
+    name: cilium-kvstoremesh
+    namespace: kube-system
+    jsonPointers: ["/data"]
+  - kind: Secret
+    name: clustermesh-apiserver-admin-cert
+    namespace: kube-system
+    jsonPointers: ["/data"]
+  - kind: Secret
+    name: clustermesh-apiserver-local-cert
+    namespace: kube-system
+    jsonPointers: ["/data"]
+  - kind: Secret
+    name: clustermesh-apiserver-remote-cert
+    namespace: kube-system
+    jsonPointers: ["/data"]
+  - kind: Secret
+    name: clustermesh-apiserver-server-cert
+    namespace: kube-system
+    jsonPointers: ["/data"]
   syncPolicy:
-    automated:
-      selfHeal: true
+    # selfHeal TEMPORARILY disabled for clustermesh adoption — re-enabled after
+    # `argocd app diff` proves the apiserver/DS won't be disrupted.
     syncOptions:
     - CreateNamespace=false
+    - RespectIgnoreDifferences=true
+    - ServerSideApply=true
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application

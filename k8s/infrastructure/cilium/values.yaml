@@ -6,6 +6,31 @@ cgroup:
 cluster:
   id: 1
   name: talos-cilium
+# Clustermesh: this cluster is meshed with talos-mesh (cluster id 2).
+# Declaring it here is the FIX for the prior drift — without it, a `helm upgrade`
+# would prune the clustermesh-apiserver embassy and break cross-cluster networking.
+# The agent DS already mounts clustermesh-secrets (Cilium mounts it `optional`
+# always), so enabling this does NOT roll the DS. All trust certs are protected by
+# the Application's ignoreDifferences, so the hand-made trust is never regenerated.
+clustermesh:
+  useAPIServer: true
+  apiserver:
+    replicas: 1
+    service:
+      type: NodePort
+    tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  config:
+    enabled: true
+    clusters:
+    - name: talos-mesh
+      port: 32379
+      ips:
+      - 192.168.6.20
+      - 192.168.6.22
+      - 192.168.6.24
 cni:
   exclusive: false
 egressGateway:
