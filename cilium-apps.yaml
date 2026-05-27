@@ -44,7 +44,8 @@ spec:
     namespace: kube-system
     jsonPointers: ["/data"]
   syncPolicy:
-    # automated.selfHeal is enabled only AFTER verifying clean (no-roll) adoption.
+    automated:
+      selfHeal: true
     syncOptions:
     - CreateNamespace=false
 ---
