@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: csi-rbdplugin
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: csi-rbdplugin
+  template:
+    metadata:
+      labels:
+        app: csi-rbdplugin
+    spec:
+      serviceAccountName: rbd-csi-nodeplugin
+      hostNetwork: true
+      hostPID: true
+      priorityClassName: system-node-critical
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      containers:
+      - name: driver-registrar
+        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.0
+        args:
+        - --v=2
+        - --csi-address=/csi/csi.sock
+        - --kubelet-registration-path=/var/lib/kubelet/plugins/rbd.csi.ceph.com/csi.sock
+        env:
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: socket-dir
+          mountPath: /csi
+        - name: registration-dir
+          mountPath: /registration
+      - name: csi-rbdplugin
+        image: quay.io/cephcsi/cephcsi:v3.16.0
+        args:
+        - --nodeid=$(NODE_ID)
+        - --type=rbd
+        - --drivername=rbd.csi.ceph.com
+        - --endpoint=$(CSI_ENDPOINT)
+        - --nodeserver=true
+        - --pidlimit=-1
+        - --metricsport=8080
+        - --forcecephkernelclient=true
+        - --metricspath=/metrics
+        - --enableprofiling=false
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: CSI_ENDPOINT
+          value: unix:///csi/csi.sock
+        securityContext:
+          privileged: true
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+        volumeMounts:
+        - name: socket-dir
+          mountPath: /csi
+        - name: mountpoint-dir
+          mountPath: /var/lib/kubelet/pods
+          mountPropagation: Bidirectional
+        - name: plugin-dir
+          mountPath: /var/lib/kubelet/plugins
+          mountPropagation: Bidirectional
+        - name: ceph-csi-config
+          mountPath: /etc/ceph-csi-config/
+        - name: ceph-etc
+          mountPath: /etc/ceph/
+        - name: keys-tmp-dir
+          mountPath: /tmp/csi/keys
+        - name: host-dev
+          mountPath: /dev
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
+      volumes:
+      - name: socket-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins/rbd.csi.ceph.com
+          type: DirectoryOrCreate
+      - name: plugin-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins
+          type: Directory
+      - name: mountpoint-dir
+        hostPath:
+          path: /var/lib/kubelet/pods
+          type: DirectoryOrCreate
+      - name: registration-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry/
+          type: Directory
+      - name: ceph-csi-config
+        configMap:
+          name: ceph-csi-config
+      - name: ceph-etc
+        emptyDir: {}
+      - name: keys-tmp-dir
+        emptyDir:
+          medium: Memory
+      - name: host-dev
+        hostPath:
+          path: /dev
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
