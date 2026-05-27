@@ -70,3 +70,7 @@ spec:
     syncOptions:
     - CreateNamespace=false
     - RespectIgnoreDifferences=true
+    # adopting Helm-created resources: client-side apply chokes on large
+    # ClusterRoles (no last-applied-configuration annotation). SSA adopts via
+    # managedFields and force-takes ownership cleanly.
+    - ServerSideApply=true
