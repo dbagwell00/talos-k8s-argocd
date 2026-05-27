@@ -1,0 +1,126 @@
+bpfMasquerade: true
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+cluster:
+  id: 1
+  name: talos-cilium
+cni:
+  exclusive: false
+egressGateway:
+  enabled: true
+externalIPs:
+  enabled: true
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  ui:
+    enabled: true
+    replicas: 1
+    service:
+      type: LoadBalancer
+      annotations:
+        io.cilium/lb-ipam-ips: "192.168.4.123"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  # Hubble metrics for Prometheus
+  metrics:
+    enabled:
+      - dns:query;response
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction
+    enableOpenMetrics: true
+    port: 9965
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: kube-prometheus-stack
+ingressController:
+  default: true
+  enabled: true
+ipam:
+  mode: kubernetes
+  operator:
+    clusterPoolIPv4MaskSize: 24
+    clusterPoolIPv4PodCIDRList: 10.244.0.0/16
+k8sServiceHost: 192.168.4.10
+k8sServicePort: 6443
+kubeProxyReplacement: true
+l2announcements:
+  enabled: true
+  leaseDuration: 120s
+  leaseRenewDeadline: 60s
+  leaseRetryPeriod: 20s
+loadBalancer:
+  # native XDP requires frames to fit in a single 4K page.
+  # With jumbo frames (MTU 9000), virtio-net can't attach native XDP.
+  # best-effort falls back to generic XDP which handles any MTU.
+  acceleration: best-effort
+  mode: snat
+operator:
+  replicas: 1
+  # Operator Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9963
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: kube-prometheus-stack
+# Cilium Agent Prometheus metrics
+prometheus:
+  enabled: true
+  port: 9962
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+routingMode: tunnel
+securityContext:
+  capabilities:
+    ciliumAgent:
+    - CHOWN
+    - KILL
+    - NET_ADMIN
+    - NET_RAW
+    - IPC_LOCK
+    - SYS_ADMIN
+    - SYS_RESOURCE
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    cleanCiliumState:
+    - NET_ADMIN
+    - SYS_ADMIN
+    - SYS_RESOURCE
+tunnelProtocol: vxlan
+# Must account for VXLAN 50-byte encapsulation overhead.
+# Physical NIC MTU is 1500, so tunnel MTU = 1500 - 50 = 1450.
+# Without this, cross-node LB/NodePort traffic with payloads exceeding
+# the tunnel MTU gets silently dropped because BPF can't fragment.
+# When upgrading to jumbo frames (MTU 9000), change to 8950.
+MTU: 1450
+# Explicit Prometheus metrics configuration
+extraConfig:
+  prometheus-serve-addr: ":9962"
+  hubble-metrics-server: ":9965"
