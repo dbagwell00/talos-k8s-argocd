@@ -1,0 +1,72 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-media-lb-ingress
+  namespace: media
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - sonarr
+          - radarr
+          - prowlarr
+          - qbittorrent
+          - flaresolverr
+          - profilarr
+  ingress:
+    - fromEntities:
+        - world
+        - cluster
+      toPorts:
+        - ports:
+            - port: "8989"
+              protocol: TCP
+            - port: "7878"
+              protocol: TCP
+            - port: "9696"
+              protocol: TCP
+            - port: "9080"
+              protocol: TCP
+            - port: "8191"
+              protocol: TCP
+            - port: "6868"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-media-internal
+  namespace: media
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - sonarr
+          - radarr
+          - prowlarr
+          - qbittorrent
+          - flaresolverr
+          - profilarr
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: media
+      toPorts:
+        - ports:
+            - port: "8989"
+              protocol: TCP
+            - port: "7878"
+              protocol: TCP
+            - port: "9696"
+              protocol: TCP
+            - port: "9080"
+              protocol: TCP
+            - port: "8191"
+              protocol: TCP
+            - port: "6868"
+              protocol: TCP
