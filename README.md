@@ -50,6 +50,7 @@ lives in [`cilium-apps.yaml`](cilium-apps.yaml) and is applied directly rather t
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
+| apps | bitwarden | mesh | Self-hosted Bitwarden (Helm self-host 1.0.4 + MSSQL) · Vault `secret/bitwarden` · standalone `bitwarden-apps.yaml` |
 | apps | filebrowser | cilium | nginx SMB file browser |
 | monitoring | loki | cilium | Log store (Loki, single-binary) |
 | monitoring | promtail | cilium | Log shipper + UniFi syslog receiver |

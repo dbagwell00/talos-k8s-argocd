@@ -30,7 +30,9 @@ spec:
     kind: "*"
     jsonPointers: ["/spec"]
   syncPolicy:
-    # automated enabled only AFTER verified clean adoption.
+    # auto-sync on git changes, but NO selfHeal/prune (matches the original;
+    # avoids pruning the chart's hook-managed resources).
+    automated: {}
     syncOptions:
     - CreateNamespace=true
     - ServerSideApply=true
