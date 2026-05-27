@@ -36,6 +36,11 @@ spec:
         kind: '*'
         jsonPointers:
         - /spec
+      # k8s auto-defaults this on StatefulSets (1.27+); charts rarely declare it
+      - group: apps
+        kind: StatefulSet
+        jsonPointers:
+        - /spec/persistentVolumeClaimRetentionPolicy
       syncPolicy:
         automated:
           prune: true
