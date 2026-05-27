@@ -1,0 +1,9 @@
+# patch-fix-kubelet-and-add-nbd.yaml
+- op: remove
+  path: /machine/kubelet/extraConfig/allowedCapabilities
+- op: remove
+  path: /machine/kubelet/extraConfig/dropCapabilities
+- op: add
+  path: /machine/kernel/modules
+  value:
+    - name: nbd

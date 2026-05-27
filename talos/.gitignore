@@ -1,0 +1,23 @@
+# Secrets & per-environment state — NEVER commit these to the public repo.
+# The OpenTofu code and patches here are safe; the files below are not.
+
+# Proxmox API credentials
+terraform.tfvars
+
+# OpenTofu/Terraform state (may contain sensitive resource attributes) + provider cache
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+
+# Generated Talos machine configs — contain the full secrets bundle
+# (CA private keys, bootstrap token, secretbox/encryption keys, service-account key)
+_out/
+*controlplane.yaml
+*worker.yaml
+
+# Client credentials
+talosconfig
+*.kubeconfig
+.kubeconfig.yaml
+kubeconfig

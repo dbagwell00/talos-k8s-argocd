@@ -1,0 +1,35 @@
+machine:
+  network:
+    hostname: talos-cilium-1
+    interfaces:
+      - interface: eth0
+        addresses:
+          - 192.168.4.20/24
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.4.1
+          - network: 192.168.1.0/24
+            gateway: 192.168.4.1
+        vip:
+          ip: 192.168.4.10
+      - interface: eth1
+        addresses:
+          - 192.168.3.20/24
+    nameservers:
+      - 192.168.4.1
+      - 1.1.1.1
+
+# ← everything below must be indented under "machine:"
+  kubelet:
+    extraArgs:
+      allowed-unsafe-sysctls: "net.ipv4.conf.all.src_valid_mark=1"
+    extraConfig:
+      allowedCapabilities:
+        - NET_ADMIN
+        - NET_RAW
+        - NET_BIND_SERVICE
+        - SYS_MODULE
+
+  sysctls:
+    net.ipv4.conf.all.src_valid_mark: "1"
+    net.ipv6.conf.all.disable_ipv6: "0"
