@@ -10,8 +10,8 @@
 # secrets stay untouched.
 #
 # Applied manually:  kubectl apply -f cilium-mesh-apps.yaml
-# NOTE: syncPolicy is MANUAL (no automated/selfHeal) until `argocd app diff`
-# proves adoption is non-disruptive. selfHeal is enabled only after verification.
+# selfHeal enabled after a clean adoption (verified: no DS roll, certs untouched).
+# prune intentionally OFF — pruning a CNI on a transient render glitch is dangerous.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -67,6 +67,8 @@ spec:
     namespace: kube-system
     jsonPointers: ["/data"]
   syncPolicy:
+    automated:
+      selfHeal: true
     syncOptions:
     - CreateNamespace=false
     - RespectIgnoreDifferences=true
