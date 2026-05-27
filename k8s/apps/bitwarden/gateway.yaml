@@ -1,0 +1,149 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: bitwarden-gateway
+  namespace: bitwarden
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.6.130"
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: bitwarden-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bitwarden-http-redirect
+  namespace: bitwarden
+spec:
+  parentRefs:
+  - name: bitwarden-gateway
+    sectionName: http
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bitwarden-routes
+  namespace: bitwarden
+spec:
+  parentRefs:
+  - name: bitwarden-gateway
+    sectionName: https
+  hostnames:
+  - bw.dlb.im
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: bitwarden-api
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /attachments
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: bitwarden-attachments
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /icons
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: bitwarden-icons
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /notifications
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: bitwarden-notifications
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /events
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: bitwarden-events
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /sso
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: bitwarden-sso
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /identity
+    backendRefs:
+    - name: bitwarden-identity
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin
+    backendRefs:
+    - name: bitwarden-admin
+      port: 5000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: bitwarden-web
+      port: 5000

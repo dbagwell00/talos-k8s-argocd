@@ -1,0 +1,155 @@
+general:
+  domain: bw.dlb.im
+  admins: dustin.bagwell@gmail.com
+  disableUserRegistration: "false"
+  enableCloudCommunication: false
+  volumeAccessMode: ReadWriteOnce
+  ingress:
+    enabled: false
+  tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+fullnameOverride: bitwarden
+nameOverride: ""
+
+secrets:
+  secretName: bitwarden-secret
+
+sharedStorageClassName: ceph-rbd
+
+component:
+  admin:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  api:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+  attachments:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  events:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  icons:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  identity:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  notifications:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  scim:
+    enabled: false
+  sso:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  web:
+    resources:
+      limits:
+        cpu: 300m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+supportComponents:
+  kubectl:
+    image:
+      name: bitnami/kubectl
+      tag: latest
+
+database:
+  enabled: true
+  podSecurityContext:
+    fsGroup: 10001
+  image:
+    name: mcr.microsoft.com/mssql/server
+    tag: 2022-CU12-ubuntu-22.04
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2G
+    requests:
+      cpu: 500m
+      memory: 2G
+  volume:
+    backups:
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      storageClass: ceph-rbd
+    data:
+      accessMode: ReadWriteOnce
+      size: 10Gi
+      storageClass: ceph-rbd
+    log:
+      accessMode: ReadWriteOnce
+      size: 10Gi
+      storageClass: ceph-rbd
+
+volume:
+  attachments:
+    size: 1Gi
+    storageClass: ceph-rbd
+  dataprotection:
+    size: 1Gi
+    storageClass: ceph-rbd
+  default-identity:
+    emptyDir: {}
+  default-web:
+    emptyDir: {}
+  identity:
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    storageClass: ceph-rbd
+  licenses:
+    size: 1Gi
+    storageClass: ceph-rbd
+  logs:
+    enabled: false
+  web:
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    storageClass: ceph-rbd

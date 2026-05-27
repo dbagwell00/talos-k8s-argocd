@@ -1,0 +1,47 @@
+---
+# Allow ingress to bitwarden services from Gateway (world/cluster) on port 5000
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-bitwarden-ingress
+  namespace: bitwarden
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: bitwarden
+  ingress:
+    # Gateway / LB traffic (Cilium SNATs to pod CIDR = world)
+    - fromEntities:
+        - world
+        - cluster
+      toPorts:
+        - ports:
+            - port: "5000"
+              protocol: TCP
+    # Intra-namespace (services talking to each other)
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: bitwarden
+      toPorts:
+        - ports:
+            - port: "5000"
+              protocol: TCP
+---
+# Allow ingress to MSSQL from bitwarden app pods
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-bitwarden-mssql
+  namespace: bitwarden
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/component: mssql
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: bitwarden
+      toPorts:
+        - ports:
+            - port: "1433"
+              protocol: TCP

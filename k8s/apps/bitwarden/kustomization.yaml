@@ -1,0 +1,45 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+- name: self-host
+  repo: https://charts.bitwarden.com
+  version: 1.0.4
+  releaseName: bitwarden-talos-mesh
+  namespace: bitwarden
+  valuesFile: values.yaml
+
+patches:
+# Remove the mssql-data PVC mount from the post-install migrator job.
+# The init container mounts the PVC just to check if /db/vault.mdf exists,
+# but this is redundant - the kubectl readiness check already confirms MSSQL
+# is running. The PVC is RWO so the migrator can't mount it from a different
+# node than MSSQL, causing it to hang forever in Init:0/1.
+# See: https://github.com/bitwarden/helm-charts/issues/173
+- target:
+    kind: Job
+    name: bitwarden-talos-mesh-migrator
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/initContainers/0/args
+      value:
+        - |
+          while [[ $(kubectl get pods -n bitwarden -l app=bitwarden-mssql -o jsonpath="{.items[*].status.containerStatuses[*].ready}") != "true" ]]; do sleep 1; done
+          echo "SQL Ready!"
+          while [[ $(kubectl get pods -n bitwarden -l app=bitwarden-admin -o jsonpath="{.items[*].status.containerStatuses[*].ready}") != "true" ]]; do sleep 1; done
+          echo "Admin Ready!"
+    - op: remove
+      path: /spec/template/spec/initContainers/0/volumeMounts
+    - op: replace
+      path: /spec/template/spec/volumes
+      value:
+        - name: migrator-extract-dir
+          emptyDir: {}
+
+# Supporting resources (were in argocd-mesh; secret replaced by ExternalSecret).
+resources:
+- namespace.yaml
+- externalsecret.yaml
+- certificate.yaml
+- gateway.yaml
+- network-policy.yaml
