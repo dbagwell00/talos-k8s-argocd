@@ -70,8 +70,8 @@ spec:
     namespace: kube-system
     jsonPointers: ["/data"]
   syncPolicy:
-    # selfHeal TEMPORARILY disabled for clustermesh adoption — re-enabled after
-    # `argocd app diff` proves the apiserver/DS won't be disrupted.
+    automated:
+      selfHeal: true
     syncOptions:
     - CreateNamespace=false
     - RespectIgnoreDifferences=true
