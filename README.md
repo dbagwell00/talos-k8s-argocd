@@ -29,6 +29,9 @@ k8s/<group>/<component>/
 
 Components are rendered with Kustomize; Helm-based components use Kustomize's native
 `helmCharts` (rendered server-side by Argo CD, charts pulled at sync time — not vendored).
+The one exception is **Cilium** (the CNI): it's a multi-source Helm Application with custom
+`ignoreDifferences` (to protect the live-patched `cilium-config`, e.g. `MTU: 1450`), so it
+lives in [`cilium-apps.yaml`](cilium-apps.yaml) and is applied directly rather than via the ApplicationSet.
 
 ## Components
 
@@ -43,6 +46,7 @@ Components are rendered with Kustomize; Helm-based components use Kustomize's na
 | infrastructure | smb-csi | cilium | SMB CSI driver + PVs · Vault `secret/samba` |
 | infrastructure | multus | both | Multus thick-plugin CNI shim (→ Cilium) + VPN NetworkAttachmentDefinitions (cilium) |
 | infrastructure | ceph-csi | both | Ceph RBD + CephFS CSI (rbd-nbd) · Vault `secret/ceph-rbd` + `secret/ceph-cephfs` |
+| infrastructure | cilium | cilium | CNI (Helm 1.17.2, kube-proxy-less, MTU 1450) + LB IP pool & L2 announce · standalone apps (`cilium-apps.yaml`), not appset |
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
