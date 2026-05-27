@@ -46,6 +46,11 @@ externalIPs:
   enabled: true
 gatewayAPI:
   enabled: true
+  # The GatewayClass + Gateway API CRDs are owned by the talos-mesh-gateway-api
+  # Application (deliberate separation). Don't let Cilium's chart re-render the
+  # GatewayClass — only enable the operator's Gateway controller.
+  gatewayClass:
+    create: "false"
 ipam:
   mode: kubernetes
 k8sServiceHost: localhost
