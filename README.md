@@ -42,6 +42,7 @@ Components are rendered with Kustomize; Helm-based components use Kustomize's na
 | infrastructure | network-policies | both | CiliumNetworkPolicies (default-deny + allow rules per namespace) |
 | infrastructure | smb-csi | cilium | SMB CSI driver + PVs · Vault `secret/samba` |
 | infrastructure | multus | both | Multus thick-plugin CNI shim (→ Cilium) + VPN NetworkAttachmentDefinitions (cilium) |
+| infrastructure | ceph-csi | both | Ceph RBD + CephFS CSI (rbd-nbd) · Vault `secret/ceph-rbd` + `secret/ceph-cephfs` |
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
