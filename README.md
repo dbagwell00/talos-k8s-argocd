@@ -30,8 +30,15 @@ k8s/<group>/<component>/
 Components are rendered with Kustomize; Helm-based components use Kustomize's native
 `helmCharts` (rendered server-side by Argo CD, charts pulled at sync time — not vendored).
 The one exception is **Cilium** (the CNI): it's a multi-source Helm Application with custom
-`ignoreDifferences` (to protect the live-patched `cilium-config`, e.g. `MTU: 1450`), so it
-lives in [`cilium-apps.yaml`](cilium-apps.yaml) and is applied directly rather than via the ApplicationSet.
+`ignoreDifferences` (to protect the live-patched `cilium-config`, e.g. `MTU: 1450`, and the
+clustermesh/Hubble trust certificates), so it lives in standalone manifests applied directly
+rather than via the ApplicationSet — [`cilium-apps.yaml`](cilium-apps.yaml) for `talos-cilium`
+and [`cilium-mesh-apps.yaml`](cilium-mesh-apps.yaml) for `talos-mesh`.
+
+The two clusters are **clustermesh-joined** (cluster id 1 ↔ 2, KVStoreMesh). Both value files
+declare clustermesh explicitly so a Helm upgrade can never prune the apiserver "embassy"; the
+hand-established trust secrets (`cilium-ca`, `cilium-clustermesh`, `clustermesh-apiserver-*-cert`)
+are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never regenerated.
 
 ## Components
 
@@ -46,7 +53,7 @@ lives in [`cilium-apps.yaml`](cilium-apps.yaml) and is applied directly rather t
 | infrastructure | smb-csi | cilium | SMB CSI driver + PVs · Vault `secret/samba` |
 | infrastructure | multus | both | Multus thick-plugin CNI shim (→ Cilium) + VPN NetworkAttachmentDefinitions (cilium) |
 | infrastructure | ceph-csi | both | Ceph RBD + CephFS CSI (rbd-nbd) · Vault `secret/ceph-rbd` + `secret/ceph-cephfs` |
-| infrastructure | cilium | both | cilium: CNI (Helm 1.17.2, kube-proxy-less, MTU 1450) + LB pool/L2 via standalone `cilium-apps.yaml`. mesh: LB pool/L2 via appset (its CNI is Helm-managed out-of-band) |
+| infrastructure | cilium | both | CNI (Helm 1.17.2, kube-proxy-less, clustermesh-joined). cilium: MTU 1450 + LB pool/L2 via `cilium-apps.yaml`. mesh: Gateway API via `cilium-mesh-apps.yaml`; LB pool/L2 via appset |
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
