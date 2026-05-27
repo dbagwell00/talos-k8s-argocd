@@ -1,0 +1,73 @@
+# Cilium Helm values for talos-mesh (cluster id 2).
+# Mirrors the live Helm release EXACTLY (chart 1.17.2) so ArgoCD adoption renders
+# an identical agent DaemonSet — no rolling restart, no CNI disruption.
+#
+# Differs from talos-cilium (../values.yaml): clustermesh-joined to talos-cilium,
+# Gateway API (not Cilium ingress), API via Talos KubePrism (localhost:7445),
+# leaner feature set (no egress gateway, no Hubble relay/UI).
+#
+# tls.ca is INTENTIONALLY OMITTED. The CA + all derived/trust certs live only
+# in-cluster (cilium-ca, cilium-clustermesh, clustermesh-apiserver-*-cert,
+# hubble-server-certs). The Application's ignoreDifferences + RespectIgnoreDifferences
+# protect them, so Helm never regenerates or overwrites the hand-made clustermesh
+# trust material (which would break the cross-cluster connection).
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+cluster:
+  id: 2
+  name: talos-mesh
+clustermesh:
+  useAPIServer: true
+  apiserver:
+    replicas: 1
+    service:
+      type: NodePort
+      loadBalancerIP: 192.168.6.15
+      externalIPs:
+      - 192.168.6.20
+      - 192.168.6.22
+      - 192.168.6.24
+    tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  config:
+    enabled: true
+    clusters:
+    - name: talos-cilium
+      port: 32380
+      ips:
+      - 192.168.3.20
+cni:
+  exclusive: false
+externalIPs:
+  enabled: true
+gatewayAPI:
+  enabled: true
+ipam:
+  mode: kubernetes
+k8sServiceHost: localhost
+k8sServicePort: 7445
+kubeProxyReplacement: true
+l2announcements:
+  enabled: true
+securityContext:
+  capabilities:
+    ciliumAgent:
+    - CHOWN
+    - KILL
+    - NET_ADMIN
+    - NET_RAW
+    - IPC_LOCK
+    - SYS_ADMIN
+    - SYS_RESOURCE
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    cleanCiliumState:
+    - NET_ADMIN
+    - SYS_ADMIN
+    - SYS_RESOURCE
