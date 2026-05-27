@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ceph-csi-config
+  namespace: kube-system
+data:
+  config.json: |-
+    [
+      {
+        "clusterID": "1707d13d-2588-49fe-ad35-afcaa30faf3e",
+        "monitors": [
+          "192.168.1.230:6789",
+          "192.168.1.232:6789",
+          "192.168.1.234:6789"
+        ]
+      }
+    ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ceph-csi-encryption-kms-config
+  namespace: kube-system
+data:
+  config.json: |
+    {}
