@@ -36,11 +36,13 @@ spec:
         kind: '*'
         jsonPointers:
         - /spec
-      # k8s auto-defaults this on StatefulSets (1.27+); charts rarely declare it
+      # k8s auto-defaults these on StatefulSets; VCTs are immutable post-create,
+      # so ignoring their diff is correct (charts don't declare volumeMode/status/etc.)
       - group: apps
         kind: StatefulSet
         jsonPointers:
         - /spec/persistentVolumeClaimRetentionPolicy
+        - /spec/volumeClaimTemplates
       syncPolicy:
         automated:
           prune: true
