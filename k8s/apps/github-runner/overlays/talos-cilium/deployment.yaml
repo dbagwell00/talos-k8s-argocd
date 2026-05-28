@@ -21,14 +21,35 @@ spec:
         operator: Exists
         effect: NoSchedule
       containers:
-      - name: runner
-        image: myoung34/github-runner:latest
-        # Runner needs to run Docker-in-Docker for `docker/build-push-action`.
-        # Privileged + DinD is the simplest path; alternative is to use
-        # buildkit-as-a-service, but DinD is what the workflow expects out of box.
+      # dockerd sidecar — shares /var/run with the runner so
+      # docker/build-push-action talks to the daemon over the unix socket.
+      - name: dind
+        image: docker:24-dind
         securityContext:
           privileged: true
         env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        args: ["--host=unix:///var/run/docker.sock"]
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run
+        - name: docker-lib
+          mountPath: /var/lib/docker
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+      - name: runner
+        image: myoung34/github-runner:latest
+        securityContext:
+          privileged: true
+        env:
+        - name: DOCKER_HOST
+          value: "unix:///var/run/docker.sock"
         - name: RUNNER_NAME_PREFIX
           value: "talos-cilium-runner"
         - name: ACCESS_TOKEN
@@ -67,4 +88,6 @@ spec:
       - name: work
         emptyDir: {}
       - name: docker-sock
+        emptyDir: {}
+      - name: docker-lib
         emptyDir: {}
