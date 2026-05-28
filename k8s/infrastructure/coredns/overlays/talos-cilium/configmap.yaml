@@ -1,0 +1,50 @@
+# Cilium cluster CoreDNS Corefile.
+#
+# The `hosts` block is the reason this is GitOps-managed:
+#   - smb.local entries point at the LAN SMB shares (consumed by smb-csi PVs).
+#   - vault.dlb.im / registry.dlb.im point at the talos-mesh Cilium gateway LB
+#     IPs so cross-cluster traffic to those HTTPS endpoints resolves correctly
+#     (Cilium does NOT masquerade pod -> RFC1918-LAN traffic, but Cilium LB
+#     return traffic DOES work, so we point at the LB IPs directly rather than
+#     routing through LAN DNS).
+#
+# Note: Talos bootstrap installs CoreDNS with a default Corefile. ArgoCD
+# selfHeal will reclaim ownership within seconds if `talosctl upgrade-k8s`
+# ever re-applies the bootstrap manifest.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+        }
+        ready
+        hosts {
+          192.168.1.238 smb.local
+          192.168.1.239 smb.local
+          192.168.1.240 smb.local
+          192.168.1.241 smb.local
+          192.168.6.121 vault.dlb.im
+          192.168.6.122 registry.dlb.im
+          fallthrough
+        }
+        log . {
+            class error
+        }
+        prometheus :9153
+
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+            pods insecure
+            fallthrough in-addr.arpa ip6.arpa
+        }
+        forward . 1.1.1.1 8.8.8.8
+        cache 30
+        loop
+        reload
+        loadbalance
+    }
