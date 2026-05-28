@@ -1,0 +1,18 @@
+# Dashboard exposed on a Cilium L2 LB IP (HTTP only for now; no cert-manager
+# on talos-cilium yet — wrap with TLS later if/when needed).
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-web
+  namespace: spacetraders
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.140"
+spec:
+  type: LoadBalancer
+  selector:
+    app: spacetraders
+  ports:
+  - name: web
+    port: 80
+    targetPort: 5173
+    protocol: TCP

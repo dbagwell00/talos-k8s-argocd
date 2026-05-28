@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spacetraders
+  namespace: spacetraders
+  labels:
+    app: spacetraders
+spec:
+  replicas: 1
+  # Single-writer: planner assumes one instance. Recreate avoids two pods
+  # racing on the API + DB during rollouts.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spacetraders
+  template:
+    metadata:
+      labels:
+        app: spacetraders
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: hub
+        image: registry.dlb.im/spacetraders:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5173
+          name: web
+        env:
+        # Agent identity (from Vault via ExternalSecret)
+        - name: ACCOUNT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-agent
+              key: ACCOUNT_TOKEN
+        - name: AGENT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-agent
+              key: AGENT_TOKEN
+        - name: AGENT_SYMBOL
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-agent
+              key: AGENT_SYMBOL
+        - name: ST_RESET_ID
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-agent
+              key: ST_RESET_ID
+        # Postgres — compose URI from CNPG app secret
+        - name: PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-pg-app
+              key: username
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-pg-app
+              key: password
+        - name: DATABASE_URL
+          value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders"
+        # Redis — use the urlquery-encoded password key (raw contains '/' + '+')
+        - name: REDIS_PASSWORD_URL
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-redis
+              key: redis-password-url
+        - name: REDIS_URL
+          value: "redis://:$(REDIS_PASSWORD_URL)@spacetraders-redis-master.spacetraders.svc:6379"
+        # Tuning
+        - name: WORKER_POOL_SIZE
+          value: "32"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
