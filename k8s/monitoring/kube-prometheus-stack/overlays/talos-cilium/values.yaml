@@ -158,6 +158,11 @@ grafana:
         name: grafana-st-pg
         key: ro-password
 
+  # ReadWriteOnce Ceph RBD PVC: a rolling update deadlocks (new pod can't
+  # attach the volume until the old one releases it). Recreate avoids that.
+  deploymentStrategy:
+    type: Recreate
+
   # Use Ceph RBD for Grafana storage
   persistence:
     enabled: true
@@ -217,7 +222,7 @@ grafana:
       type: postgres
       uid: spacetraders-pg
       access: proxy
-      url: spacetraders-pg-ro.spacetraders.svc.cluster.local:5432
+      url: spacetraders-pg-r.spacetraders.svc.cluster.local:5432
       user: grafana_ro
       jsonData:
         database: spacetraders
