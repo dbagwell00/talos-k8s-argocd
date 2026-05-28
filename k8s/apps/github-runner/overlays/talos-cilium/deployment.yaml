@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner
+  namespace: github-runner
+  labels:
+    app: github-runner
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: github-runner
+  template:
+    metadata:
+      labels:
+        app: github-runner
+    spec:
+      serviceAccountName: github-runner
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: runner
+        image: myoung34/github-runner:latest
+        # Runner needs to run Docker-in-Docker for `docker/build-push-action`.
+        # Privileged + DinD is the simplest path; alternative is to use
+        # buildkit-as-a-service, but DinD is what the workflow expects out of box.
+        securityContext:
+          privileged: true
+        env:
+        - name: RUNNER_NAME_PREFIX
+          value: "talos-cilium-runner"
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-runner-secret
+              key: GITHUB_TOKEN
+        - name: REPO_URL
+          valueFrom:
+            secretKeyRef:
+              name: github-runner-secret
+              key: REPO_URL
+        - name: RUNNER_WORKDIR
+          value: "/tmp/runner"
+        - name: RUNNER_GROUP
+          value: "default"
+        - name: LABELS
+          value: "self-hosted,talos,linux,x64"
+        - name: EPHEMERAL
+          value: "true"
+        - name: DISABLE_AUTO_UPDATE
+          value: "true"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: work
+          mountPath: /tmp/runner
+        - name: docker-sock
+          mountPath: /var/run
+      volumes:
+      - name: work
+        emptyDir: {}
+      - name: docker-sock
+        emptyDir: {}
