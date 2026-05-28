@@ -65,6 +65,7 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | apps | registry | mesh | Self-hosted Docker registry (`registry:2`) behind Cilium Gateway · LE cert for `registry.dlb.im` · 50Gi Ceph RBD |
 | apps | spacetraders-pg | cilium | PostgreSQL 16 (CNPG, 1 instance, 20Gi RBD), LAN-exposed @ `192.168.4.140:5432` · Vault `secret/spacetraders/pg` |
 | apps | spacetraders-redis | cilium | Redis 7 standalone (Bitnami, 4Gi RBD), LAN-exposed @ `192.168.4.141:6379` · Vault `secret/spacetraders/redis` |
+| apps | spacetraders | cilium | Hub (planner + worker pool + Quart dashboard) from `registry.dlb.im/spacetraders:latest` · dashboard @ `192.168.4.142` · Vault `secret/spacetraders/agent` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
 | apps | bitwarden | mesh | Self-hosted Bitwarden (Helm self-host 1.0.4 + MSSQL) · Vault `secret/bitwarden` · standalone `bitwarden-apps.yaml` |
