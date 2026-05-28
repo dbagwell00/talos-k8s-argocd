@@ -58,7 +58,13 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | infrastructure | multus | both | Multus thick-plugin CNI shim (→ Cilium) + VPN NetworkAttachmentDefinitions (cilium) |
 | infrastructure | ceph-csi | both | Ceph RBD + CephFS CSI (rbd-nbd) · Vault `secret/ceph-rbd` + `secret/ceph-cephfs` |
 | infrastructure | cilium | both | CNI (Helm 1.17.2, kube-proxy-less, clustermesh-joined). cilium: MTU 1450 + LB pool/L2 via `cilium-apps.yaml`. mesh: Gateway API via `cilium-mesh-apps.yaml`; LB pool/L2 via appset |
+| infrastructure | cloudnative-pg | cilium | CloudNativePG operator (chart 0.22.1) — manages PostgreSQL `Cluster` CRs |
+| infrastructure | coredns | cilium | Cluster CoreDNS `Corefile` (hosts block for `smb.local`, `vault.dlb.im`, `registry.dlb.im`) under GitOps so live edits don't drift |
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
+| apps | github-runner | cilium | Self-hosted GitHub Actions runners (myoung34/github-runner + docker:dind) for the `spacetraders` repo · Vault `secret/github-runner` |
+| apps | registry | mesh | Self-hosted Docker registry (`registry:2`) behind Cilium Gateway · LE cert for `registry.dlb.im` · 50Gi Ceph RBD |
+| apps | spacetraders-pg | cilium | PostgreSQL 16 (CNPG, 1 instance, 20Gi RBD), LAN-exposed @ `192.168.4.140:5432` · Vault `secret/spacetraders/pg` |
+| apps | spacetraders-redis | cilium | Redis 7 standalone (Bitnami, 4Gi RBD), LAN-exposed @ `192.168.4.141:6379` · Vault `secret/spacetraders/redis` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
 | apps | bitwarden | mesh | Self-hosted Bitwarden (Helm self-host 1.0.4 + MSSQL) · Vault `secret/bitwarden` · standalone `bitwarden-apps.yaml` |
