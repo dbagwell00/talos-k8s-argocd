@@ -8,8 +8,28 @@ helmCharts:
   releaseName: spacetraders-redis
   namespace: spacetraders
   valuesInline:
+    # Required when overriding images off docker.io/bitnami/*
+    global:
+      security:
+        allowInsecureImages: true
     architecture: standalone
     fullnameOverride: spacetraders-redis
+    # Bitnami moved free-tier images out of docker.io/bitnami/* in late 2025;
+    # the chart's pinned tag no longer exists. Point at bitnamilegacy instead.
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/redis
+      tag: 7.4.3-debian-12-r0
+    kubectl:
+      image:
+        registry: docker.io
+        repository: bitnamilegacy/kubectl
+        tag: 1.33.3-debian-12-r0
+    sentinel:
+      image:
+        registry: docker.io
+        repository: bitnamilegacy/redis-sentinel
+        tag: 7.4.3-debian-12-r0
     auth:
       enabled: true
       existingSecret: spacetraders-redis
