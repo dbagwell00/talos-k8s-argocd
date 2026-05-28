@@ -14,3 +14,4 @@ resources:
 - namespace.yaml
 - externalsecret-grafana.yaml
 - externalsecret-alertmanager.yaml
+- externalsecret-spacetraders-pg.yaml

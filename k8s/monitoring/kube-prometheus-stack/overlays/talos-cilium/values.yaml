@@ -150,6 +150,14 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
 
+  # Read-only PG password (ESO-synced from Vault secret/spacetraders/pg) exposed
+  # as an env var that the SpaceTraders-PG datasource interpolates below.
+  envValueFrom:
+    ST_PG_RO_PASSWORD:
+      secretKeyRef:
+        name: grafana-st-pg
+        key: ro-password
+
   # Use Ceph RBD for Grafana storage
   persistence:
     enabled: true
@@ -202,6 +210,25 @@ grafana:
       url: http://loki.monitoring.svc.cluster.local:3100
       jsonData:
         maxLines: 1000
+
+    # SpaceTraders fleet-agent PostgreSQL (read-only role). Password is
+    # interpolated from the ST_PG_RO_PASSWORD env var (see envValueFrom above).
+    - name: SpaceTraders-PG
+      type: postgres
+      uid: spacetraders-pg
+      access: proxy
+      url: spacetraders-pg-ro.spacetraders.svc.cluster.local:5432
+      user: grafana_ro
+      jsonData:
+        database: spacetraders
+        sslmode: require
+        postgresVersion: 1600
+        timescaledb: false
+        maxOpenConns: 5
+        maxIdleConns: 2
+        connMaxLifetime: 14400
+      secureJsonData:
+        password: ${ST_PG_RO_PASSWORD}
 
   # Dashboard providers
   dashboardProviders:

@@ -1,0 +1,242 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spacetraders-api-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  spacetraders-api.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["spacetraders"],
+      "time": { "from": "now-3h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "SpaceTraders Fleet Agent",
+      "uid": "spacetraders-api",
+      "version": 1,
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "type": "row",
+          "title": "API Budget (2 req/s per-IP ceiling)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 100,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "title": "Requests / sec (range avg)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+          "id": 1,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "decimals": 2,
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1.5 },
+                { "color": "red", "value": 1.9 }
+              ] }
+            },
+            "overrides": []
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float / NULLIF(max(ts) - min(ts), 0) AS rps FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "% of 2 req/s ceiling",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+          "id": 2,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 0,
+              "min": 0, "max": 100,
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 75 },
+                { "color": "red", "value": 95 }
+              ] }
+            },
+            "overrides": []
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) / NULLIF(max(ts) - min(ts), 0) / 2.0 AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Total requests (range)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+          "id": 3,
+          "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "none", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) AS reqs FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Ships making API calls",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+          "id": 4,
+          "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [ { "color": "purple", "value": null } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "none", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(DISTINCT ship_symbol) AS ships FROM api_requests WHERE $__unixEpochFilter(ts) AND ship_symbol IS NOT NULL" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Probe-scan share of budget",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+          "id": 5,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent", "decimals": 1, "min": 0, "max": 100,
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 50 },
+                { "color": "red", "value": 70 }
+              ] }
+            },
+            "overrides": []
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE order_label ~ '^circuit') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Error rate",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+          "id": 6,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent", "decimals": 2, "min": 0,
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 2 },
+                { "color": "red", "value": 5 }
+              ] }
+            },
+            "overrides": []
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE status_code >= 400) / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Request rate (req/s, 1-min buckets) vs 2 req/s ceiling",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+          "id": 7,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 2 } ] }
+            },
+            "overrides": []
+          },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, count(*)::float/60 AS rps FROM api_requests WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+        },
+        {
+          "type": "piechart",
+          "title": "Budget share by activity",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+          "id": 8,
+          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT CASE WHEN order_label IS NULL THEN 'standalone' WHEN order_label ~ '^circuit' THEN 'circuit (probe scans)' WHEN order_label ~ '^trade' THEN 'trade' WHEN order_label ~ '^multi' THEN 'multi-trade' WHEN order_label ~ '^hauler_relocate' THEN 'hauler_relocate' WHEN order_label ~ '^ferry' THEN 'ferry' WHEN order_label ~ '^probe_dispatch' THEN 'probe_dispatch' WHEN order_label ~ '^explorer' THEN 'explorer-chart' WHEN order_label ~ '^park' THEN 'park' ELSE regexp_replace(order_label, '[ :#].*$', '') END AS activity, count(*) AS reqs FROM api_requests WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 2 DESC" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Request rate by activity (stacked req/s)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+          "id": 9,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": { "drawStyle": "line", "fillOpacity": 40, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } }
+            },
+            "overrides": []
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, CASE WHEN order_label IS NULL THEN 'standalone' WHEN order_label ~ '^circuit' THEN 'circuit (probe scans)' WHEN order_label ~ '^trade' THEN 'trade' WHEN order_label ~ '^multi' THEN 'multi-trade' WHEN order_label ~ '^hauler_relocate' THEN 'hauler_relocate' WHEN order_label ~ '^ferry' THEN 'ferry' WHEN order_label ~ '^probe_dispatch' THEN 'probe_dispatch' WHEN order_label ~ '^explorer' THEN 'explorer-chart' WHEN order_label ~ '^park' THEN 'park' ELSE regexp_replace(order_label, '[ :#].*$', '') END AS activity, count(*)::float/60 AS rps FROM api_requests WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "barchart",
+          "title": "Requests by call type",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+          "id": 10,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "axisPlacement": "auto" } }, "overrides": [] },
+          "options": { "orientation": "horizontal", "xField": "action", "showValue": "auto", "legend": { "showLegend": false } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT CASE WHEN endpoint ~ '/my/ships/[^/]+/[a-z]+$' THEN method || ' ' || regexp_replace(endpoint, '.*/my/ships/[^/]+/', '') WHEN endpoint ~ '/my/ships/[^/]+$' THEN 'GET ship' WHEN endpoint ~ '/waypoints/[^/]+/market' THEN 'GET market' WHEN endpoint ~ '/waypoints/[^/]+/shipyard' THEN 'GET shipyard' WHEN endpoint ~ '/my/agent' THEN 'GET agent' ELSE 'other' END AS action, count(*) AS reqs FROM api_requests WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
+        },
+        {
+          "type": "row",
+          "title": "Economy",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+          "id": 101,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Credits over time",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+          "id": 11,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, max(credits) AS credits FROM credits_history WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Trade profit (per 5-min bucket)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+          "id": 12,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1 } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(profit) AS profit FROM events WHERE $__unixEpochFilter(ts) AND profit IS NOT NULL GROUP BY 1 ORDER BY 1" } ]
+        },
+        {
+          "type": "table",
+          "title": "Top goods by profit",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 30 },
+          "id": 13,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
+          "options": { "showHeader": true },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT good, sum(profit) AS profit, count(*) AS trades FROM events WHERE $__unixEpochFilter(ts) AND profit IS NOT NULL AND good IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 15" } ]
+        },
+        {
+          "type": "table",
+          "title": "Busiest ships (by API requests)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 30 },
+          "id": 14,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
+          "options": { "showHeader": true },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT ship_symbol AS ship, count(*) AS requests FROM api_requests WHERE $__unixEpochFilter(ts) AND ship_symbol IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 15" } ]
+        }
+      ]
+    }
