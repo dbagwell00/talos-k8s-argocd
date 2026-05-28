@@ -144,6 +144,16 @@ prometheus:
 # Grafana configuration
 grafana:
   enabled: true
+
+  # Group sidecar-provisioned dashboards into Grafana folders via the
+  # `grafana_folder` annotation on each dashboard ConfigMap. CMs without the
+  # annotation stay in the root (General) folder.
+  sidecar:
+    dashboards:
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
+
   # admin creds from ESO-managed secret (Vault secret/grafana)
   admin:
     existingSecret: grafana-admin

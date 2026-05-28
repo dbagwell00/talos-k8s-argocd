@@ -4,3 +4,6 @@ resources:
 - unifi-dashboard-configmap.yaml
 - windows-exporter-dashboard-configmap.yaml
 - spacetraders-api-dashboard-configmap.yaml
+- spacetraders-overview-dashboard.yaml
+- spacetraders-markets-dashboard.yaml
+- spacetraders-amm-dashboard.yaml
