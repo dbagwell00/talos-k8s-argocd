@@ -1,0 +1,38 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: spacetraders-pg
+  namespace: spacetraders
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+
+  bootstrap:
+    initdb:
+      database: spacetraders
+      owner: turkeyboi
+      secret:
+        name: spacetraders-pg-app
+
+  storage:
+    storageClass: ceph-rbd
+    size: 20Gi
+
+  # talos-cilium is all control-plane
+  affinity:
+    tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"

@@ -1,0 +1,18 @@
+# Allow LAN clients (and intra-namespace app pods) to reach Redis on 6379.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-spacetraders-redis
+  namespace: spacetraders
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  ingress:
+  - fromEntities:
+    - world
+    - cluster
+    toPorts:
+    - ports:
+      - port: "6379"
+        protocol: TCP

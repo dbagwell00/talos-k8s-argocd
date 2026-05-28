@@ -1,0 +1,20 @@
+# Allow LAN clients (and intra-namespace app pods) to reach PG on 5432.
+# LB-SNATs traffic so source is reserved:world from PG's perspective.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-spacetraders-pg
+  namespace: spacetraders
+spec:
+  endpointSelector:
+    matchExpressions:
+    - key: cnpg.io/cluster
+      operator: Exists
+  ingress:
+  - fromEntities:
+    - world
+    - cluster
+    toPorts:
+    - ports:
+      - port: "5432"
+        protocol: TCP

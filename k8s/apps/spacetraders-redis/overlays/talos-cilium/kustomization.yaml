@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+- name: redis
+  repo: https://charts.bitnami.com/bitnami
+  version: 20.6.2
+  releaseName: spacetraders-redis
+  namespace: spacetraders
+  valuesInline:
+    architecture: standalone
+    fullnameOverride: spacetraders-redis
+    auth:
+      enabled: true
+      existingSecret: spacetraders-redis
+      existingSecretPasswordKey: redis-password
+    master:
+      persistence:
+        enabled: true
+        storageClass: ceph-rbd
+        size: 4Gi
+      # All-CP cluster
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+      # LAN-exposed for the WSL/Windows host
+      service:
+        type: LoadBalancer
+        annotations:
+          io.cilium/lb-ipam-ips: "192.168.4.141"
+        ports:
+          redis: 6379
+    metrics:
+      enabled: false
+
+resources:
+- namespace.yaml
+- externalsecret.yaml
+- network-policy.yaml

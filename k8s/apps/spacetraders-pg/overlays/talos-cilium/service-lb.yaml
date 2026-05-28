@@ -1,0 +1,20 @@
+# LAN-exposed LoadBalancer for the WSL/Windows host to reach Postgres.
+# CNPG already creates ClusterIP services (spacetraders-pg-rw, -ro, -r);
+# this is an additional Service selecting the primary pod via CNPG labels.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-pg-lan
+  namespace: spacetraders
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.140"
+spec:
+  type: LoadBalancer
+  selector:
+    cnpg.io/cluster: spacetraders-pg
+    role: primary
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
