@@ -2,3 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: spacetraders
+  labels:
+    # k8s adds this automatically on every Namespace; declare it so ArgoCD
+    # doesn't perma-diff.
+    kubernetes.io/metadata.name: spacetraders

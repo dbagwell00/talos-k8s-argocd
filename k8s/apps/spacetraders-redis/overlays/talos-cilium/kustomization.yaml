@@ -61,6 +61,5 @@ helmCharts:
       enabled: false
 
 resources:
-- namespace.yaml
 - externalsecret.yaml
 - network-policy.yaml
