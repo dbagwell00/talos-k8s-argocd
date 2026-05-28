@@ -1,0 +1,57 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: registry-gateway
+  namespace: registry
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.6.132"
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: registry-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: registry-http-redirect
+  namespace: registry
+spec:
+  parentRefs:
+  - name: registry-gateway
+    sectionName: http
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: registry-route
+  namespace: registry
+spec:
+  parentRefs:
+  - name: registry-gateway
+    sectionName: https
+  hostnames:
+  - registry.dlb.im
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: registry
+      port: 5000

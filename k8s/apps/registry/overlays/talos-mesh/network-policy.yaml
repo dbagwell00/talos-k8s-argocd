@@ -1,0 +1,19 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-registry
+  namespace: registry
+spec:
+  endpointSelector:
+    matchLabels:
+      app: registry
+  ingress:
+  - fromEntities:
+    - world
+    - cluster
+    - host
+    - remote-node
+    toPorts:
+    - ports:
+      - port: "5000"
+        protocol: TCP
