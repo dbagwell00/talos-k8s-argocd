@@ -43,6 +43,18 @@ spec:
         jsonPointers:
         - /spec/persistentVolumeClaimRetentionPolicy
         - /spec/volumeClaimTemplates
+      # ESO writes status (binding/conditions/refreshTime/syncedResourceVersion)
+      # after every sync — never in git, would always be OutOfSync.
+      - group: external-secrets.io
+        kind: ExternalSecret
+        jsonPointers:
+        - /status
+      # k8s auto-adds `kubernetes.io/metadata.name` on every Namespace; ignored
+      # so charts/manifests that don't bake the label don't perma-drift.
+      - group: ''
+        kind: Namespace
+        jsonPointers:
+        - /metadata/labels/kubernetes.io~1metadata.name
       syncPolicy:
         automated:
           prune: true
