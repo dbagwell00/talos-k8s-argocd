@@ -214,7 +214,7 @@ data:
         },
         {
           "type": "row",
-          "title": "Probe Coverage vs Target (1:1 park in hauler systems)",
+          "title": "Probe Coverage vs Target (best markets per hauler system; have counts in-flight/assigned)",
           "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
           "id": 103,
           "collapsed": false,
@@ -222,13 +222,13 @@ data:
         },
         {
           "type": "stat",
-          "title": "Probes still to buy (deficit to 1:1)",
+          "title": "Probes still to buy (deficit to target)",
           "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 4, "w": 6, "x": 0, "y": 37 },
           "id": 17,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 150 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "WITH sys AS (SELECT split_part(waypoint,'-',1)||'-'||split_part(waypoint,'-',2) AS system, count(*) AS markets FROM markets GROUP BY 1), probes AS (SELECT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system, count(*) AS have FROM ships WHERE role='SATELLITE' AND position IS NOT NULL GROUP BY 1), haulers AS (SELECT DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system FROM ships WHERE role='HAULER' AND position IS NOT NULL) SELECT sum(GREATEST(LEAST(s.markets,12)-COALESCE(p.have,0),0)) AS deficit FROM sys s JOIN haulers h ON h.system=s.system LEFT JOIN probes p ON p.system=s.system" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "WITH sys AS (SELECT split_part(waypoint,'-',1)||'-'||split_part(waypoint,'-',2) AS system, count(*) AS markets FROM markets GROUP BY 1), probes AS (SELECT COALESCE(probe_target_system, split_part(position,'-',1)||'-'||split_part(position,'-',2)) AS system, count(*) AS have FROM ships WHERE role='SATELLITE' GROUP BY 1), haulers AS (SELECT DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system FROM ships WHERE role='HAULER' AND position IS NOT NULL) SELECT sum(GREATEST(LEAST(s.markets,6)-COALESCE(p.have,0),0)) AS deficit FROM sys s JOIN haulers h ON h.system=s.system LEFT JOIN probes p ON p.system=s.system" } ]
         },
         {
           "type": "stat",
@@ -238,7 +238,7 @@ data:
           "id": 18,
           "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 85 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "WITH sys AS (SELECT split_part(waypoint,'-',1)||'-'||split_part(waypoint,'-',2) AS system, count(*) AS markets FROM markets GROUP BY 1), probes AS (SELECT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system, count(*) AS have FROM ships WHERE role='SATELLITE' AND position IS NOT NULL GROUP BY 1), haulers AS (SELECT DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system FROM ships WHERE role='HAULER' AND position IS NOT NULL) SELECT 100.0 * sum(COALESCE(p.have,0)) / NULLIF(sum(LEAST(s.markets,12)),0) AS pct FROM sys s JOIN haulers h ON h.system=s.system LEFT JOIN probes p ON p.system=s.system" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "WITH sys AS (SELECT split_part(waypoint,'-',1)||'-'||split_part(waypoint,'-',2) AS system, count(*) AS markets FROM markets GROUP BY 1), probes AS (SELECT COALESCE(probe_target_system, split_part(position,'-',1)||'-'||split_part(position,'-',2)) AS system, count(*) AS have FROM ships WHERE role='SATELLITE' GROUP BY 1), haulers AS (SELECT DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system FROM ships WHERE role='HAULER' AND position IS NOT NULL) SELECT 100.0 * sum(COALESCE(p.have,0)) / NULLIF(sum(LEAST(s.markets,6)),0) AS pct FROM sys s JOIN haulers h ON h.system=s.system LEFT JOIN probes p ON p.system=s.system" } ]
         },
         {
           "type": "timeseries",
@@ -258,7 +258,7 @@ data:
           "id": 20,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "deficit" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 6 } ] } } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "deficit", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "WITH sys AS (SELECT split_part(waypoint,'-',1)||'-'||split_part(waypoint,'-',2) AS system, count(*) AS markets FROM markets GROUP BY 1), probes AS (SELECT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system, count(*) AS have FROM ships WHERE role='SATELLITE' AND position IS NOT NULL GROUP BY 1), haulers AS (SELECT DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system FROM ships WHERE role='HAULER' AND position IS NOT NULL) SELECT s.system, LEAST(s.markets,12) AS target, COALESCE(p.have,0) AS have, GREATEST(LEAST(s.markets,12)-COALESCE(p.have,0),0) AS deficit FROM sys s JOIN haulers h ON h.system=s.system LEFT JOIN probes p ON p.system=s.system ORDER BY deficit DESC, target DESC LIMIT 25" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "WITH sys AS (SELECT split_part(waypoint,'-',1)||'-'||split_part(waypoint,'-',2) AS system, count(*) AS markets FROM markets GROUP BY 1), probes AS (SELECT COALESCE(probe_target_system, split_part(position,'-',1)||'-'||split_part(position,'-',2)) AS system, count(*) AS have FROM ships WHERE role='SATELLITE' GROUP BY 1), haulers AS (SELECT DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2) AS system FROM ships WHERE role='HAULER' AND position IS NOT NULL) SELECT s.system, LEAST(s.markets,6) AS target, COALESCE(p.have,0) AS have, GREATEST(LEAST(s.markets,6)-COALESCE(p.have,0),0) AS deficit FROM sys s JOIN haulers h ON h.system=s.system LEFT JOIN probes p ON p.system=s.system ORDER BY deficit DESC, target DESC LIMIT 25" } ]
         }
       ]
     }
