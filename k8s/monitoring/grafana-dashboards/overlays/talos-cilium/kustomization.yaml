@@ -8,3 +8,4 @@ resources:
 - spacetraders-markets-dashboard.yaml
 - spacetraders-amm-dashboard.yaml
 - spacetraders-logs-dashboard.yaml
+- spacetraders-pull-dashboard.yaml
