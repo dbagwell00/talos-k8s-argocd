@@ -18,3 +18,16 @@ spec:
     - ports:
       - port: "5432"
         protocol: TCP
+  # In-cluster management ports (NOT exposed to world): the CNPG operator
+  # (cnpg-system) reads instance health from :8000/pg/status, and Prometheus
+  # scrapes instance metrics on :9187. Without these the operator's status
+  # probe is dropped → perpetual "Instance Status Extraction Error: HTTP
+  # communication issue" and the operator is blind to instance health.
+  - fromEntities:
+    - cluster
+    toPorts:
+    - ports:
+      - port: "8000"
+        protocol: TCP
+      - port: "9187"
+        protocol: TCP
