@@ -10,3 +10,4 @@ resources:
 - spacetraders-logs-dashboard.yaml
 - spacetraders-pull-dashboard.yaml
 - spacetraders-spread-dashboard.yaml
+- spacetraders-ticks-dashboard.yaml
