@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spacetraders-ticks-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "SpaceTraders"
+data:
+  spacetraders-ticks.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["spacetraders", "ticks", "performance"],
+      "time": { "from": "now-6h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "SpaceTraders — Planner Tick Performance",
+      "uid": "spacetraders-ticks",
+      "version": 1,
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "type": "row",
+          "title": "Tick latency — how long is a planning cycle taking? (only ticks >= 0.5s are recorded)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 100,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "title": "Avg tick (range)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+          "id": 1,
+          "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT avg(total_s) AS avg_s FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Max tick (range)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+          "id": 2,
+          "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT max(total_s) AS max_s FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Working ticks / min (range)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+          "id": 3,
+          "fieldConfig": { "defaults": { "unit": "short", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float * 60.0 / NULLIF(max(ts) - min(ts), 0) AS per_min FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Avg idle ships / working tick (range)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+          "id": 4,
+          "fieldConfig": { "defaults": { "unit": "short", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT avg(idle_ships)::float AS avg_idle FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+        },
+        {
+          "type": "row",
+          "title": "Tick duration & phase attribution over time",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+          "id": 101,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Tick duration / min — avg & max (s)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 6 },
+          "id": 5,
+          "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(total_s) AS avg_s, max(total_s) AS max_s FROM tick_timings WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Per-phase time / min (stacked) — where the tick goes",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
+          "id": 6,
+          "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, key AS metric, avg(value::float) AS seconds FROM tick_timings, jsonb_each_text(phases) WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "row",
+          "title": "Cost centers — aggregate time per phase",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+          "id": 102,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "table",
+          "title": "Phase totals (range) — total & avg seconds per phase, busiest first",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+          "id": 7,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "total_s" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 60 } ] } } ] }, { "matcher": { "id": "byName", "options": "avg_s" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "decimals", "value": 3 } ] } ] },
+          "options": { "showHeader": true, "sortBy": [ { "displayName": "total_s", "desc": true } ] },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT key AS phase, count(*) AS ticks, sum(value::float) AS total_s, avg(value::float) AS avg_s FROM tick_timings, jsonb_each_text(phases) WHERE $__unixEpochFilter(ts) AND value::float > 0 GROUP BY 1 ORDER BY total_s DESC" } ]
+        }
+      ]
+    }
