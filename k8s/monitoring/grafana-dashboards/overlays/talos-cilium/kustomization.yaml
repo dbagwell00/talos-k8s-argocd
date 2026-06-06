@@ -12,3 +12,4 @@ resources:
 - spacetraders-spread-dashboard.yaml
 - spacetraders-ticks-dashboard.yaml
 - spacetraders-spread-report-dashboard.yaml
+- spacetraders-competitors-dashboard.yaml
