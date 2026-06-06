@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spacetraders-competitors-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "SpaceTraders"
+data:
+  spacetraders-competitors.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "refresh": "5m",
+      "schemaVersion": 39,
+      "tags": ["spacetraders", "competitors"],
+      "time": { "from": "now-24h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "SpaceTraders — Competitors",
+      "uid": "spacetraders-competitors",
+      "version": 1,
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "type": "row",
+          "title": "Leaderboard — rivals in our markets vs us (competitor_agents)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 100,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Credits over time (TURKEYBOI1 = us, highlighted)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 1 },
+          "id": 1,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(credits) AS credits FROM competitor_agents WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Ship count over time (TURKEYBOI1 = us)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 1 },
+          "id": 2,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(ship_count) AS ships FROM competitor_agents WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "table",
+          "title": "Latest standings — credits, ships, credits/ship (efficiency)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 10 },
+          "id": 3,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "credits_per_ship" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 50000 }, { "color": "green", "value": 200000 } ] } } ] } ] },
+          "options": { "showHeader": true, "sortBy": [ { "displayName": "credits", "desc": true } ] },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT agent, credits, ship_count, round(credits::numeric / NULLIF(ship_count, 0)) AS credits_per_ship FROM (SELECT DISTINCT ON (agent) agent, credits, ship_count FROM competitor_agents WHERE $__unixEpochFilter(ts) ORDER BY agent, ts DESC) x ORDER BY credits DESC" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Credits per ship over time (TURKEYBOI1 = us) — bigger or smarter?",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 10 },
+          "id": 4,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(credits)::numeric / NULLIF(max(ship_count), 0) AS cr_per_ship FROM competitor_agents WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "row",
+          "title": "Competitor fleet building (competitor_purchases)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 },
+          "id": 101,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "barchart",
+          "title": "Ship purchases by type (range)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 20 },
+          "id": 10,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "axisPlacement": "auto" } }, "overrides": [] },
+          "options": { "orientation": "horizontal", "xField": "ship_type", "showValue": "auto", "legend": { "showLegend": false } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT ship_type, count(*) AS buys FROM competitor_purchases WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Purchases over time by ship type (stacked)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 20 },
+          "id": 11,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, ship_type AS metric, count(*) AS buys FROM competitor_purchases WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "table",
+          "title": "Who's buying what (by agent)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 20 },
+          "id": 12,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "avg_price" }, "properties": [ { "id": "unit", "value": "short" } ] } ] },
+          "options": { "showHeader": true, "sortBy": [ { "displayName": "buys", "desc": true } ] },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT agent, ship_type, count(*) AS buys, round(avg(price)) AS avg_price FROM competitor_purchases WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 25" } ]
+        },
+        {
+          "type": "row",
+          "title": "Contested markets (competitor_transactions)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 },
+          "id": 102,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "table",
+          "title": "Contested systems — rival trades where WE have traders",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 29 },
+          "id": 20,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
+          "options": { "showHeader": true, "sortBy": [ { "displayName": "rival_fills", "desc": true } ] },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT t.system, count(*) AS rival_fills, sum(t.units) AS rival_units, count(DISTINCT t.agent) AS rivals FROM competitor_transactions t WHERE $__unixEpochFilter(t.ts) AND t.system IN (SELECT DISTINCT system FROM spread_snapshot WHERE traders > 0) GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
+        },
+        {
+          "type": "table",
+          "title": "Goods rivals trade most (fills, units, avg price)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 29 },
+          "id": 21,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
+          "options": { "showHeader": true, "sortBy": [ { "displayName": "fills", "desc": true } ] },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT good, side, count(*) AS fills, sum(units) AS units, round(avg(price_per_unit)) AS avg_price FROM competitor_transactions WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 25" } ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Competitor trade volume over time (units / hr)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 38 },
+          "id": 22,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, side AS metric, sum(units) AS units FROM competitor_transactions WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+        }
+      ]
+    }
