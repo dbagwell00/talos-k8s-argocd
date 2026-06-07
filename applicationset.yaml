@@ -56,10 +56,14 @@ spec:
         jsonPointers:
         - /metadata/labels/kubernetes.io~1metadata.name
       syncPolicy:
+        # spacetraders: autosync intentionally disabled so the deployment can be
+        # manually scaled to 0 without selfHeal reverting it to git's replicas: 1.
+        {{- if ne (index .path.segments 2) "spacetraders" }}
         automated:
           prune: true
           selfHeal: true
           allowEmpty: false
+        {{- end }}
         syncOptions:
           - ServerSideApply=true
           - CreateNamespace=true
