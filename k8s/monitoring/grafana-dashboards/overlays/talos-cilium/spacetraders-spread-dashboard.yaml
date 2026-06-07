@@ -26,7 +26,7 @@ data:
       "title": "SpaceTraders — Spread & Distribution",
       "uid": "spacetraders-spread",
       "version": 1,
-      "templating": { "list": [] },
+      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
       "panels": [
         {
           "type": "row",
@@ -122,7 +122,7 @@ data:
           "id": 8,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 30, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(DISTINCT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2))::float AS systems_traded FROM events WHERE $__unixEpochFilter(ts) AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(DISTINCT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2))::float AS systems_traded FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "row",
@@ -140,7 +140,7 @@ data:
           "id": 9,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 30, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, sum(profit)::float AS profit FROM events WHERE $__unixEpochFilter(ts) AND action = 'trade' GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, sum(profit)::float AS profit FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "timeseries",
@@ -150,7 +150,7 @@ data:
           "id": 10,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(*)::float AS trades FROM events WHERE $__unixEpochFilter(ts) AND action = 'trade' GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(*)::float AS trades FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "row",
@@ -168,7 +168,7 @@ data:
           "id": 11,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "profit" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 100000 } ] } } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "profit", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2) AS system, count(*) AS trades, sum(profit) AS profit, count(DISTINCT good) AS goods FROM events WHERE $__unixEpochFilter(ts) AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY profit DESC LIMIT 30" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2) AS system, count(*) AS trades, sum(profit) AS profit, count(DISTINCT good) AS goods FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY profit DESC LIMIT 30" } ]
         }
       ]
     }

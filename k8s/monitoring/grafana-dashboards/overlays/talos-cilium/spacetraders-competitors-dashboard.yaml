@@ -26,7 +26,7 @@ data:
       "title": "SpaceTraders — Competitors",
       "uid": "spacetraders-competitors",
       "version": 1,
-      "templating": { "list": [] },
+      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
       "panels": [
         {
           "type": "row",
@@ -44,7 +44,7 @@ data:
           "id": 1,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
           "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(credits) AS credits FROM competitor_agents WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(credits) AS credits FROM competitor_agents WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "timeseries",
@@ -54,7 +54,7 @@ data:
           "id": 2,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
           "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(ship_count) AS ships FROM competitor_agents WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(ship_count) AS ships FROM competitor_agents WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "table",
@@ -64,7 +64,7 @@ data:
           "id": 3,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "credits_per_ship" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 50000 }, { "color": "green", "value": 200000 } ] } } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "credits", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT agent, credits, ship_count, round(credits::numeric / NULLIF(ship_count, 0)) AS credits_per_ship FROM (SELECT DISTINCT ON (agent) agent, credits, ship_count FROM competitor_agents WHERE $__unixEpochFilter(ts) ORDER BY agent, ts DESC) x ORDER BY credits DESC" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT agent, credits, ship_count, round(credits::numeric / NULLIF(ship_count, 0)) AS credits_per_ship FROM (SELECT DISTINCT ON (agent) agent, credits, ship_count FROM competitor_agents WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY agent, ts DESC) x ORDER BY credits DESC" } ]
         },
         {
           "type": "timeseries",
@@ -74,7 +74,7 @@ data:
           "id": 4,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
           "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(credits)::numeric / NULLIF(max(ship_count), 0) AS cr_per_ship FROM competitor_agents WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(credits)::numeric / NULLIF(max(ship_count), 0) AS cr_per_ship FROM competitor_agents WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "row",
@@ -92,7 +92,7 @@ data:
           "id": 10,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "axisPlacement": "auto" } }, "overrides": [] },
           "options": { "orientation": "horizontal", "xField": "ship_type", "showValue": "auto", "legend": { "showLegend": false } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT ship_type, count(*) AS buys FROM competitor_purchases WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT ship_type, count(*) AS buys FROM competitor_purchases WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
         },
         {
           "type": "timeseries",
@@ -102,7 +102,7 @@ data:
           "id": 11,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
           "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, ship_type AS metric, count(*) AS buys FROM competitor_purchases WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, ship_type AS metric, count(*) AS buys FROM competitor_purchases WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "table",
@@ -112,7 +112,7 @@ data:
           "id": 12,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "avg_price" }, "properties": [ { "id": "unit", "value": "short" } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "buys", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT agent, ship_type, count(*) AS buys, round(avg(price)) AS avg_price FROM competitor_purchases WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 25" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT agent, ship_type, count(*) AS buys, round(avg(price)) AS avg_price FROM competitor_purchases WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 25" } ]
         },
         {
           "type": "row",
@@ -130,7 +130,7 @@ data:
           "id": 20,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "rival_fills", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT t.system, count(*) AS rival_fills, sum(t.units) AS rival_units, count(DISTINCT t.agent) AS rivals FROM competitor_transactions t WHERE $__unixEpochFilter(t.ts) AND t.system IN (SELECT DISTINCT system FROM spread_snapshot WHERE traders > 0) GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT t.system, count(*) AS rival_fills, sum(t.units) AS rival_units, count(DISTINCT t.agent) AS rivals FROM competitor_transactions t WHERE $__unixEpochFilter(t.ts) AND t.reset_id = '$reset' AND t.system IN (SELECT DISTINCT system FROM spread_snapshot WHERE traders > 0 AND reset_id = '$reset') GROUP BY 1 ORDER BY 2 DESC LIMIT 20" } ]
         },
         {
           "type": "table",
@@ -140,7 +140,7 @@ data:
           "id": 21,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "fills", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT good, side, count(*) AS fills, sum(units) AS units, round(avg(price_per_unit)) AS avg_price FROM competitor_transactions WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 25" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT good, side, count(*) AS fills, sum(units) AS units, round(avg(price_per_unit)) AS avg_price FROM competitor_transactions WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 25" } ]
         },
         {
           "type": "timeseries",
@@ -150,7 +150,7 @@ data:
           "id": 22,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, side AS metric, sum(units) AS units FROM competitor_transactions WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, side AS metric, sum(units) AS units FROM competitor_transactions WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         }
       ]
     }

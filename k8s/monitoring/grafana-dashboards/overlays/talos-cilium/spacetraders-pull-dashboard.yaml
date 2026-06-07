@@ -26,7 +26,7 @@ data:
       "title": "SpaceTraders — Pull Model (Probe Parking & API)",
       "uid": "spacetraders-pull",
       "version": 1,
-      "templating": { "list": [] },
+      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
       "panels": [
         {
           "type": "row",
@@ -44,7 +44,7 @@ data:
           "id": 1,
           "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 2, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1.5 }, { "color": "red", "value": 1.9 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float / NULLIF(max(ts) - min(ts), 0) AS rps FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float / NULLIF(max(ts) - min(ts), 0) AS rps FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -54,7 +54,7 @@ data:
           "id": 2,
           "fieldConfig": { "defaults": { "unit": "percent", "decimals": 0, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 80 }, { "color": "red", "value": 95 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) / NULLIF(max(ts) - min(ts), 0) / 2.0 AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) / NULLIF(max(ts) - min(ts), 0) / 2.0 AS pct FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -64,7 +64,7 @@ data:
           "id": 3,
           "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 5 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE endpoint ~ '/(sell|purchase)$') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE endpoint ~ '/(sell|purchase)$') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -74,7 +74,7 @@ data:
           "id": 4,
           "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 35 }, { "color": "red", "value": 50 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE endpoint ~ '/(navigate|orbit|dock)$') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE endpoint ~ '/(navigate|orbit|dock)$') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -84,7 +84,7 @@ data:
           "id": 5,
           "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 25 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE order_label ~ '^circuit') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE order_label ~ '^circuit') / NULLIF(count(*), 0) AS pct FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -94,7 +94,7 @@ data:
           "id": 6,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 150 }, { "color": "green", "value": 300 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) FILTER (WHERE endpoint ~ '/(sell|purchase)$')::float * 3600 / NULLIF(max(ts) - min(ts), 0) AS tph FROM api_requests WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) FILTER (WHERE endpoint ~ '/(sell|purchase)$')::float * 3600 / NULLIF(max(ts) - min(ts), 0) AS tph FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "timeseries",
@@ -104,7 +104,7 @@ data:
           "id": 7,
           "fieldConfig": { "defaults": { "unit": "cpm", "custom": { "drawStyle": "line", "fillOpacity": 40, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
           "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, CASE WHEN endpoint ~ '/(navigate|orbit|dock)$' THEN 'movement (nav/orbit/dock)' WHEN endpoint ~ '/market$' THEN 'market scan' WHEN endpoint ~ '/(sell|purchase)$' THEN 'revenue (buy/sell)' WHEN endpoint ~ '/scan/ships$' THEN 'scan_ships' WHEN endpoint ~ '/jump$' THEN 'jump' WHEN endpoint ~ '/refuel$' THEN 'refuel' WHEN endpoint ~ '/my/ships/[^/]+$' THEN 'ship poll' ELSE 'other' END AS category, count(*)::float AS cpm FROM api_requests WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, CASE WHEN endpoint ~ '/(navigate|orbit|dock)$' THEN 'movement (nav/orbit/dock)' WHEN endpoint ~ '/market$' THEN 'market scan' WHEN endpoint ~ '/(sell|purchase)$' THEN 'revenue (buy/sell)' WHEN endpoint ~ '/scan/ships$' THEN 'scan_ships' WHEN endpoint ~ '/jump$' THEN 'jump' WHEN endpoint ~ '/refuel$' THEN 'refuel' WHEN endpoint ~ '/my/ships/[^/]+$' THEN 'ship poll' ELSE 'other' END AS category, count(*)::float AS cpm FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "row",
@@ -122,7 +122,7 @@ data:
           "id": 8,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean"] }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, CASE WHEN endpoint ~ '/sell$' THEN 'sells' ELSE 'buys' END AS kind, count(*)::float AS n FROM api_requests WHERE $__unixEpochFilter(ts) AND endpoint ~ '/(sell|purchase)$' GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, CASE WHEN endpoint ~ '/sell$' THEN 'sells' ELSE 'buys' END AS kind, count(*)::float AS n FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND endpoint ~ '/(sell|purchase)$' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "timeseries",
@@ -132,7 +132,7 @@ data:
           "id": 9,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, max(credits) AS credits FROM credits_history WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, max(credits) AS credits FROM credits_history WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "row",
@@ -200,7 +200,7 @@ data:
           "id": 15,
           "fieldConfig": { "defaults": { "unit": "cpm", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, count(*)::float AS scan_ships FROM api_requests WHERE $__unixEpochFilter(ts) AND endpoint ~ '/scan/ships$' GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, count(*)::float AS scan_ships FROM api_requests WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND endpoint ~ '/scan/ships$' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "barchart",
@@ -248,7 +248,7 @@ data:
           "id": 19,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, count(*)::float AS probes_bought FROM api_requests WHERE endpoint = '/my/ships' AND method = 'POST' AND request_body->>'shipType' = 'SHIP_PROBE' AND $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, count(*)::float AS probes_bought FROM api_requests WHERE endpoint = '/my/ships' AND method = 'POST' AND request_body->>'shipType' = 'SHIP_PROBE' AND $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "table",
