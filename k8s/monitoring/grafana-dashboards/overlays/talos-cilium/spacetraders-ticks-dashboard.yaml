@@ -26,7 +26,7 @@ data:
       "title": "SpaceTraders — Planner Tick Performance",
       "uid": "spacetraders-ticks",
       "version": 1,
-      "templating": { "list": [] },
+      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
       "panels": [
         {
           "type": "row",
@@ -44,7 +44,7 @@ data:
           "id": 1,
           "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT avg(total_s) AS avg_s FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT avg(total_s) AS avg_s FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -54,7 +54,7 @@ data:
           "id": 2,
           "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT max(total_s) AS max_s FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT max(total_s) AS max_s FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -64,7 +64,7 @@ data:
           "id": 3,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float * 60.0 / NULLIF(max(ts) - min(ts), 0) AS per_min FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float * 60.0 / NULLIF(max(ts) - min(ts), 0) AS per_min FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "stat",
@@ -74,7 +74,7 @@ data:
           "id": 4,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 1, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT avg(idle_ships)::float AS avg_idle FROM tick_timings WHERE $__unixEpochFilter(ts)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT avg(idle_ships)::float AS avg_idle FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'" } ]
         },
         {
           "type": "row",
@@ -92,7 +92,7 @@ data:
           "id": 5,
           "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(total_s) AS avg_s, max(total_s) AS max_s FROM tick_timings WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(total_s) AS avg_s, max(total_s) AS max_s FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "timeseries",
@@ -102,7 +102,7 @@ data:
           "id": 6,
           "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
           "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, key AS metric, avg(value::float) AS seconds FROM tick_timings, jsonb_each_text(phases) WHERE $__unixEpochFilter(ts) GROUP BY 1, 2 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, key AS metric, avg(value::float) AS seconds FROM tick_timings, jsonb_each_text(phases) WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
         },
         {
           "type": "row",
@@ -120,7 +120,7 @@ data:
           "id": 7,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "total_s" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 60 } ] } } ] }, { "matcher": { "id": "byName", "options": "avg_s" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "decimals", "value": 3 } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "total_s", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT key AS phase, count(*) AS ticks, sum(value::float) AS total_s, avg(value::float) AS avg_s FROM tick_timings, jsonb_each_text(phases) WHERE $__unixEpochFilter(ts) AND value::float > 0 GROUP BY 1 ORDER BY total_s DESC" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT key AS phase, count(*) AS ticks, sum(value::float) AS total_s, avg(value::float) AS avg_s FROM tick_timings, jsonb_each_text(phases) WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND value::float > 0 GROUP BY 1 ORDER BY total_s DESC" } ]
         },
         {
           "type": "row",
@@ -138,7 +138,7 @@ data:
           "id": 8,
           "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [ { "matcher": { "id": "byName", "options": "api_wait_s" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }, { "matcher": { "id": "byName", "options": "compute_s" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] } ] },
           "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(total_s - COALESCE(api_wait_s, 0)) AS compute_s, avg(COALESCE(api_wait_s, 0)) AS api_wait_s FROM tick_timings WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(total_s - COALESCE(api_wait_s, 0)) AS compute_s, avg(COALESCE(api_wait_s, 0)) AS api_wait_s FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "timeseries",
@@ -148,7 +148,7 @@ data:
           "id": 9,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(COALESCE(api_calls, 0)) AS api_calls_per_tick FROM tick_timings WHERE $__unixEpochFilter(ts) GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, avg(COALESCE(api_calls, 0)) AS api_calls_per_tick FROM tick_timings WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1" } ]
         }
       ]
     }

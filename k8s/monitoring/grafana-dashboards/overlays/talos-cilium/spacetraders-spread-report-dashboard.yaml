@@ -24,7 +24,7 @@ data:
       "title": "SpaceTraders — Expansion / Spread Report",
       "uid": "spacetraders-spread-report",
       "version": 1,
-      "templating": { "list": [] },
+      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
       "panels": [
         {
           "type": "row", "title": "Fleet & Territory (latest snapshot)",
@@ -35,35 +35,35 @@ data:
           "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }, "id": 1,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT sum(traders)::float AS traders FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT sum(traders)::float AS traders FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')" } ]
         },
         {
           "type": "stat", "title": "Probes", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }, "id": 2,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT sum(probes)::float AS probes FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT sum(probes)::float AS probes FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')" } ]
         },
         {
           "type": "stat", "title": "Territory systems", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }, "id": 3,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float AS systems FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float AS systems FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')" } ]
         },
         {
           "type": "stat", "title": "Occupied / Frontier / Next wave", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 }, "id": 4,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }, "colorMode": "value", "graphMode": "none", "textMode": "value_and_name" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) FILTER (WHERE hops_from_occupied=0)::float AS occupied, count(*) FILTER (WHERE hops_from_occupied=1)::float AS frontier, count(*) FILTER (WHERE hops_from_occupied=2)::float AS next_wave FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) FILTER (WHERE hops_from_occupied=0)::float AS occupied, count(*) FILTER (WHERE hops_from_occupied=1)::float AS frontier, count(*) FILTER (WHERE hops_from_occupied=2)::float AS next_wave FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')" } ]
         },
         {
           "type": "stat", "title": "Total trader deficit", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 }, "id": 5,
           "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 20 }, { "color": "red", "value": 100 } ] } }, "overrides": [] },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT sum(greatest(trader_target-traders,0))::float AS deficit FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot)" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT sum(greatest(trader_target-traders,0))::float AS deficit FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')" } ]
         },
         {
           "type": "row", "title": "Market freshness (live)", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 101, "collapsed": false, "panels": []
@@ -97,14 +97,14 @@ data:
           "gridPos": { "h": 11, "w": 12, "x": 0, "y": 11 }, "id": 9,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "deficit" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 } ] } } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "deficit", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, trader_target-traders AS deficit, traders||'/'||trader_target AS t_p, round(score) AS score, markets, tag, hops_from_occupied AS hops FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot) AND traders < trader_target ORDER BY deficit DESC, score DESC LIMIT 40" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, trader_target-traders AS deficit, traders||'/'||trader_target AS t_p, round(score) AS score, markets, tag, hops_from_occupied AS hops FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND traders < trader_target ORDER BY deficit DESC, score DESC LIMIT 40" } ]
         },
         {
           "type": "table", "title": "Probe Surplus Candidates (probes > target, by surplus)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 11, "w": 12, "x": 12, "y": 11 }, "id": 10,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "surplus" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 20 } ] } } ] } ] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "surplus", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, probes-probe_target AS surplus, probes||'/'||probe_target AS p_target, round(score) AS score, markets, tag FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot) AND probes > probe_target ORDER BY surplus DESC LIMIT 40" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, probes-probe_target AS surplus, probes||'/'||probe_target AS p_target, round(score) AS score, markets, tag FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND probes > probe_target ORDER BY surplus DESC LIMIT 40" } ]
         },
         {
           "type": "row", "title": "Frontier & Next Wave — where to expand", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 }, "id": 103, "collapsed": false, "panels": []
@@ -114,14 +114,14 @@ data:
           "gridPos": { "h": 11, "w": 12, "x": 0, "y": 23 }, "id": 11,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "score", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, traders||'/'||trader_target AS t, probes||'/'||probe_target AS p, round(score) AS score, markets, has_shipyard AS yard, uncharted, tag FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot) AND hops_from_occupied=1 ORDER BY score DESC LIMIT 40" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, traders||'/'||trader_target AS t, probes||'/'||probe_target AS p, round(score) AS score, markets, has_shipyard AS yard, uncharted, tag FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND hops_from_occupied=1 ORDER BY score DESC LIMIT 40" } ]
         },
         {
           "type": "table", "title": "Next Wave (2 hops out, by score)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
           "gridPos": { "h": 11, "w": 12, "x": 12, "y": 23 }, "id": 12,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
           "options": { "showHeader": true, "sortBy": [ { "displayName": "score", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, round(score) AS score, markets, has_shipyard AS yard, uncharted, tag FROM spread_snapshot WHERE ts=(SELECT max(ts) FROM spread_snapshot) AND hops_from_occupied=2 ORDER BY score DESC LIMIT 40" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT system, round(score) AS score, markets, has_shipyard AS yard, uncharted, tag FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND hops_from_occupied=2 ORDER BY score DESC LIMIT 40" } ]
         }
       ]
     }
