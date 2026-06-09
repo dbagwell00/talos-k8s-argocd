@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spacetraders-virus-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "SpaceTraders"
+data:
+  spacetraders-virus.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["spacetraders", "virus", "probes", "coverage"],
+      "time": { "from": "now-12h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "SpaceTraders — Probe Virus (Viral Spread / Infection)",
+      "uid": "spacetraders-virus",
+      "version": 1,
+      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
+      "panels": [
+        {
+          "type": "row",
+          "title": "Infection spread — how far has the virus filled the galaxy?",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 100, "collapsed": false, "panels": []
+        },
+        {
+          "type": "stat", "title": "Coverage %", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }, "id": 1,
+          "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 25 }, { "color": "green", "value": 75 } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT round(100.0*covered/NULLIF(reachable,0),1) AS pct FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "stat", "title": "Covered", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }, "id": 2,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT covered FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "stat", "title": "Reachable", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }, "id": 3,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "blue" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT reachable FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "stat", "title": "Viable found", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 }, "id": 4,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "purple" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT viable FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "stat", "title": "Haulered (trading)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 }, "id": 5,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "orange" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT haulered FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "stat", "title": "Spawned (total)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 }, "id": 6,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "text" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "none", "graphMode": "area", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT spawned FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "timeseries", "title": "Fill curve — covered → scanned → viable → haulered", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 5 }, "id": 7,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last", "max"] }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(ts) AS time, covered, scanned, viable, haulered, reachable FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts" } ]
+        },
+        {
+          "type": "row", "title": "Probe lifecycle — sent → in-flight → arrived, transit time, branching",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 101, "collapsed": false, "panels": []
+        },
+        {
+          "type": "timeseries", "title": "Spawned vs arrived vs in-flight", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 }, "id": 8,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(ts) AS time, spawned, arrived, pending AS in_flight FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts" } ]
+        },
+        {
+          "type": "timeseries", "title": "Transit time (p50 / p90)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 15 }, "id": 9,
+          "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(ts) AS time, p50_transit_s AS p50, p90_transit_s AS p90 FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts" } ]
+        },
+        {
+          "type": "timeseries", "title": "Branching (children per yard: mean / max)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 15 }, "id": 10,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(ts) AS time, mean_children AS mean, max_children AS max FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts" } ]
+        },
+        {
+          "type": "row", "title": "Cost — antimatter + credits spent infecting the galaxy",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }, "id": 102, "collapsed": false, "panels": []
+        },
+        {
+          "type": "stat", "title": "Est. antimatter spent", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 24 }, "id": 11,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "red" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT est_am FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "stat", "title": "Est. credits on probes", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 24 }, "id": 12,
+          "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "yellow" } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT est_cr FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1" } ]
+        },
+        {
+          "type": "timeseries", "title": "Spend over time (est AM, est credits, agent credits)", "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 }, "id": 13,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "credits" }, "properties": [ { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(ts) AS time, est_am, est_cr, credits FROM probe_expansion_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts" } ]
+        }
+      ]
+    }

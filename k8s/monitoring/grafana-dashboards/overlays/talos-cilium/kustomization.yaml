@@ -13,3 +13,4 @@ resources:
 - spacetraders-ticks-dashboard.yaml
 - spacetraders-spread-report-dashboard.yaml
 - spacetraders-competitors-dashboard.yaml
+- spacetraders-virus-dashboard.yaml
