@@ -976,6 +976,469 @@ data:
             "y": 37
           },
           "id": 21
+        },
+        {
+          "type": "row",
+          "title": "Gate (Phase 0) \u2014 the build's binding constraint, live",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 44
+          },
+          "id": 22
+        },
+        {
+          "type": "stat",
+          "title": "Gate %",
+          "description": "Total fulfilled/required across gate materials.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'gate'->>'pct')::float FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 45
+          },
+          "id": 23
+        },
+        {
+          "type": "stat",
+          "title": "ETA (hours)",
+          "description": "deficit / delivery-rate EMA. Null while nothing flows.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'gate'->>'eta_hours')::float FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 45
+          },
+          "id": 24
+        },
+        {
+          "type": "stat",
+          "title": "Funded",
+          "description": "construction_funded \u2014 the budget gate construction must clear.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT CASE WHEN metadata->'gate'->>'funded'='true' THEN 1 ELSE 0 END FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "NOT FUNDED",
+                      "color": "red"
+                    },
+                    "1": {
+                      "text": "FUNDED",
+                      "color": "green"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 45
+          },
+          "id": 25
+        },
+        {
+          "type": "stat",
+          "title": "Bottleneck good",
+          "description": "Most-starved upstream good when a material is blocked_factory (ChainState walk).",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT coalesce(metadata->'gate'->>'bottleneck','\u2014') FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 45
+          },
+          "id": 26
+        },
+        {
+          "type": "stat",
+          "title": "FAB_MATS state",
+          "description": "",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT upper(metadata->'gate'->'materials'->'FAB_MATS'->>'state') FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 45
+          },
+          "id": 27
+        },
+        {
+          "type": "stat",
+          "title": "ADV_CIRCUITRY state",
+          "description": "",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT upper(metadata->'gate'->'materials'->'ADVANCED_CIRCUITRY'->>'state') FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 45
+          },
+          "id": 28
+        },
+        {
+          "type": "timeseries",
+          "title": "Per-material deficit (units to deliver)",
+          "description": "The gap-to-done per gate material. Flat while funded = the stall the chain-deadlock postmortems never saw live.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'gate'->'materials'->'FAB_MATS'->>'deficit')::int AS fab_mats,\n  (metadata->'gate'->'materials'->'ADVANCED_CIRCUITRY'->>'deficit')::int AS advanced_circuitry\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 49
+          },
+          "id": 29
+        },
+        {
+          "type": "timeseries",
+          "title": "Delivery rate (units/hr, EMA) + gate %",
+          "description": "Convergence speed. Rate decaying toward 0 while deficit > 0 means the binding constraint (see states) is live.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'gate'->>'rate_hr')::float AS rate_hr,\n  (metadata->'gate'->>'pct')::float * 100 AS pct\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'gate' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 49
+          },
+          "id": 30
         }
       ]
     }
