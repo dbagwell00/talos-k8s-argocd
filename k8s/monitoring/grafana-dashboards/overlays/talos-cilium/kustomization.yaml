@@ -8,9 +8,8 @@ resources:
 - spacetraders-markets-dashboard.yaml
 - spacetraders-amm-dashboard.yaml
 - spacetraders-logs-dashboard.yaml
-- spacetraders-pull-dashboard.yaml
 - spacetraders-spread-dashboard.yaml
 - spacetraders-ticks-dashboard.yaml
-- spacetraders-spread-report-dashboard.yaml
 - spacetraders-competitors-dashboard.yaml
 - spacetraders-virus-dashboard.yaml
+- spacetraders-controllers-dashboard.yaml

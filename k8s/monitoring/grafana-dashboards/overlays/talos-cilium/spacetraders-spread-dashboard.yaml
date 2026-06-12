@@ -10,7 +10,9 @@ metadata:
 data:
   spacetraders-spread.json: |
     {
-      "annotations": { "list": [] },
+      "annotations": {
+        "list": []
+      },
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
@@ -19,19 +21,53 @@ data:
       "liveNow": false,
       "refresh": "30s",
       "schemaVersion": 39,
-      "tags": ["spacetraders", "spread"],
-      "time": { "from": "now-6h", "to": "now" },
+      "tags": [
+        "expansion",
+        "spacetraders",
+        "spread"
+      ],
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
       "timepicker": {},
       "timezone": "browser",
-      "title": "SpaceTraders — Spread & Distribution",
+      "title": "SpaceTraders \u2014 Expansion & Spread",
       "uid": "spacetraders-spread",
       "version": 1,
-      "templating": { "list": [ { "name": "reset", "label": "Reset", "type": "query", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC", "refresh": 1, "sort": 0, "includeAll": false, "multi": false, "current": { "text": "2026-06-07", "value": "2026-06-07" } } ] },
+      "templating": {
+        "list": [
+          {
+            "name": "reset",
+            "label": "Reset",
+            "type": "query",
+            "datasource": {
+              "type": "postgres",
+              "uid": "spacetraders-pg"
+            },
+            "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC",
+            "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC",
+            "refresh": 1,
+            "sort": 0,
+            "includeAll": false,
+            "multi": false,
+            "current": {
+              "text": "2026-06-07",
+              "value": "2026-06-07"
+            }
+          }
+        ]
+      },
       "panels": [
         {
           "type": "row",
-          "title": "Hauler distribution — is the fleet spreading off the saturated clumps?",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "title": "Hauler distribution \u2014 is the fleet spreading off the saturated clumps?",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
           "id": 100,
           "collapsed": false,
           "panels": []
@@ -39,67 +75,364 @@ data:
         {
           "type": "stat",
           "title": "Haulers (target: grow past 64)",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 1
+          },
           "id": 1,
-          "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "yellow", "value": null }, { "color": "green", "value": 65 } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float AS haulers FROM ships WHERE role = 'HAULER'" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 65
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*)::float AS haulers FROM ships WHERE role = 'HAULER'"
+            }
+          ]
         },
         {
           "type": "stat",
           "title": "Idle hauler % (target: fall from ~41%)",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 1
+          },
           "id": 2,
-          "fieldConfig": { "defaults": { "unit": "percent", "decimals": 0, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 20 }, { "color": "red", "value": 35 } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE status IN ('idle','idle_wait')) / NULLIF(count(*), 0) AS pct FROM ships WHERE role = 'HAULER'" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 0,
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "red",
+                    "value": 35
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE status IN ('idle','idle_wait')) / NULLIF(count(*), 0) AS pct FROM ships WHERE role = 'HAULER'"
+            }
+          ]
         },
         {
           "type": "stat",
           "title": "Systems with a hauler (target: climb from ~44)",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 1
+          },
           "id": 3,
-          "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "yellow", "value": null }, { "color": "green", "value": 50 } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2))::float AS systems FROM ships WHERE role = 'HAULER' AND position IS NOT NULL" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 50
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2))::float AS systems FROM ships WHERE role = 'HAULER' AND position IS NOT NULL"
+            }
+          ]
         },
         {
           "type": "stat",
           "title": "Probes",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 1
+          },
           "id": 4,
-          "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(*)::float AS probes FROM ships WHERE role = 'SATELLITE'" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*)::float AS probes FROM ships WHERE role = 'SATELLITE'"
+            }
+          ]
         },
         {
           "type": "stat",
           "title": "Probed systems (coverage breadth)",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 1
+          },
           "id": 5,
-          "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT count(DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2))::float AS systems FROM ships WHERE role = 'SATELLITE' AND position IS NOT NULL" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(DISTINCT split_part(position,'-',1)||'-'||split_part(position,'-',2))::float AS systems FROM ships WHERE role = 'SATELLITE' AND position IS NOT NULL"
+            }
+          ]
         },
         {
           "type": "stat",
           "title": "Frontier SPREAD jumps (in range)",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 1
+          },
           "id": 6,
-          "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "yellow", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
-          "targets": [ { "refId": "A", "datasource": { "type": "loki", "uid": "loki" }, "expr": "sum(count_over_time({app=\"spacetraders\",container=\"hub\"} |~ \"SPREAD\" [$__range]))", "editorMode": "code", "queryType": "instant" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "area",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "sum(count_over_time({app=\"spacetraders\",container=\"hub\"} |~ \"SPREAD\" [$__range]))",
+              "editorMode": "code",
+              "queryType": "instant"
+            }
+          ]
         },
         {
           "type": "row",
           "title": "Spread activity & reach",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          },
           "id": 101,
           "collapsed": false,
           "panels": []
@@ -107,27 +440,108 @@ data:
         {
           "type": "timeseries",
           "title": "Hauler relocation jumps / min (redistribution off saturated systems)",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 6 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
           "id": 7,
-          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never" } }, "overrides": [] },
-          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, count(*)::float AS relocations FROM decisions WHERE $__unixEpochFilter(ts) AND category = 'relocate' GROUP BY 1 ORDER BY 1" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 60,
+                "lineWidth": 1,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/60)*60) AS time, count(*)::float AS relocations FROM decisions WHERE $__unixEpochFilter(ts) AND category = 'relocate' GROUP BY 1 ORDER BY 1"
+            }
+          ]
         },
         {
           "type": "timeseries",
-          "title": "Distinct systems actively traded / 10 min (the spread payoff — should climb)",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
+          "title": "Distinct systems actively traded / 10 min (the spread payoff \u2014 should climb)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
           "id": 8,
-          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 30, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
-          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(DISTINCT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2))::float AS systems_traded FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY 1" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 30,
+                "lineWidth": 2,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(DISTINCT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2))::float AS systems_traded FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY 1"
+            }
+          ]
         },
         {
           "type": "row",
-          "title": "Money — does spreading into the frontier earn more?",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+          "title": "Money \u2014 does spreading into the frontier earn more?",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 15
+          },
           "id": 102,
           "collapsed": false,
           "panels": []
@@ -135,40 +549,786 @@ data:
         {
           "type": "timeseries",
           "title": "Net trade profit / 10 min",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
           "id": 9,
-          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 30, "lineWidth": 2, "showPoints": "never" } }, "overrides": [] },
-          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, sum(profit)::float AS profit FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' GROUP BY 1 ORDER BY 1" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 30,
+                "lineWidth": 2,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, sum(profit)::float AS profit FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' GROUP BY 1 ORDER BY 1"
+            }
+          ]
         },
         {
           "type": "timeseries",
           "title": "Trades / 10 min",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
           "id": 10,
-          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never" } }, "overrides": [] },
-          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(*)::float AS trades FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' GROUP BY 1 ORDER BY 1" } ]
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 60,
+                "lineWidth": 1,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/600)*600) AS time, count(*)::float AS trades FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' GROUP BY 1 ORDER BY 1"
+            }
+          ]
         },
         {
           "type": "row",
-          "title": "Frontier monetization — which systems are lighting up",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+          "title": "Frontier monetization \u2014 which systems are lighting up",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
           "id": 103,
           "collapsed": false,
           "panels": []
         },
         {
           "type": "table",
-          "title": "Systems by trade profit (in range) — newly-spread systems should appear here",
-          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
+          "title": "Systems by trade profit (in range) \u2014 newly-spread systems should appear here",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 26
+          },
           "id": 11,
-          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "profit" }, "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 100000 } ] } } ] } ] },
-          "options": { "showHeader": true, "sortBy": [ { "displayName": "profit", "desc": true } ] },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2) AS system, count(*) AS trades, sum(profit) AS profit, count(DISTINCT good) AS goods FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY profit DESC LIMIT 30" } ]
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "profit"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 1
+                        },
+                        {
+                          "color": "green",
+                          "value": 100000
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "profit",
+                "desc": true
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT split_part(sell_wp,'-',1)||'-'||split_part(sell_wp,'-',2) AS system, count(*) AS trades, sum(profit) AS profit, count(DISTINCT good) AS goods FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND sell_wp IS NOT NULL GROUP BY 1 ORDER BY profit DESC LIMIT 30"
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Per-system spread report (spread_snapshot, ~5min)",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 36
+          },
+          "id": 104
+        },
+        {
+          "type": "stat",
+          "title": "Territory systems",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 37
+          },
+          "id": 105,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*)::float AS systems FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Occupied / Frontier / Next wave",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 37
+          },
+          "id": 106,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": true
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*) FILTER (WHERE hops_from_occupied=0)::float AS occupied, count(*) FILTER (WHERE hops_from_occupied=1)::float AS frontier, count(*) FILTER (WHERE hops_from_occupied=2)::float AS next_wave FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Total trader deficit",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 37
+          },
+          "id": 107,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT sum(greatest(trader_target-traders,0))::float AS deficit FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset')"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Fresh <10m",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 0,
+            "y": 42
+          },
+          "id": 108,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*)::float AS fresh FROM markets WHERE extract(epoch from now())-updated_at < 600"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Stale 10-60m",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 8,
+            "y": 42
+          },
+          "id": 109,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*)::float AS stale FROM markets WHERE extract(epoch from now())-updated_at BETWEEN 600 AND 3600"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Very stale >60m",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 16,
+            "y": 42
+          },
+          "id": 110,
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*)::float AS very_stale FROM markets WHERE extract(epoch from now())-updated_at > 3600"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Trader Deficit Candidates (traders < target, by deficit then score)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 0,
+            "y": 47
+          },
+          "id": 111,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "deficit"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 1
+                        },
+                        {
+                          "color": "red",
+                          "value": 3
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "deficit",
+                "desc": true
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT system, trader_target-traders AS deficit, traders||'/'||trader_target AS t_p, round(score) AS score, markets, tag, hops_from_occupied AS hops FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND traders < trader_target ORDER BY deficit DESC, score DESC LIMIT 40"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Probe Surplus Candidates (probes > target, by surplus)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 12,
+            "y": 47
+          },
+          "id": 112,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "surplus"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 5
+                        },
+                        {
+                          "color": "red",
+                          "value": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "surplus",
+                "desc": true
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT system, probes-probe_target AS surplus, probes||'/'||probe_target AS p_target, round(score) AS score, markets, tag FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND probes > probe_target ORDER BY surplus DESC LIMIT 40"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Frontier Systems (1 hop out, by score)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 0,
+            "y": 59
+          },
+          "id": 113,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "score",
+                "desc": true
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT system, traders||'/'||trader_target AS t, probes||'/'||probe_target AS p, round(score) AS score, markets, has_shipyard AS yard, uncharted, tag FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND hops_from_occupied=1 ORDER BY score DESC LIMIT 40"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Next Wave (2 hops out, by score)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 12,
+            "y": 59
+          },
+          "id": 114,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "score",
+                "desc": true
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT system, round(score) AS score, markets, has_shipyard AS yard, uncharted, tag FROM spread_snapshot WHERE reset_id = '$reset' AND ts=(SELECT max(ts) FROM spread_snapshot WHERE reset_id = '$reset') AND hops_from_occupied=2 ORDER BY score DESC LIMIT 40"
+            }
+          ]
         }
       ]
     }
