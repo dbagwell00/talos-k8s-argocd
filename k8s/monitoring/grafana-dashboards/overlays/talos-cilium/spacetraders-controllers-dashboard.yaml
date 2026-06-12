@@ -1439,6 +1439,295 @@ data:
             "y": 49
           },
           "id": 30
+        },
+        {
+          "type": "row",
+          "title": "Viability \u2014 the judgment that steers all placement",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 56
+          },
+          "id": 31
+        },
+        {
+          "type": "timeseries",
+          "title": "Territory by viability state",
+          "description": "State distribution across the expansion territory. The promising\u2192viable conversion rate IS the spread payoff.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'viability'->'counts'->>'viable')::int AS viable,\n  (metadata->'viability'->'counts'->>'dormant')::int AS dormant,\n  (metadata->'viability'->'counts'->>'promising')::int AS promising,\n  (metadata->'viability'->'counts'->>'unknown')::int AS unknown,\n  (metadata->'viability'->'counts'->>'dead')::int AS dead,\n  (metadata->'viability'->'counts'->>'contested')::int AS contested\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'viability' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 57
+          },
+          "id": 32
+        },
+        {
+          "type": "timeseries",
+          "title": "Viability churn (transitions per snapshot, delta)",
+          "description": "The judgment's churn \u2014 every viable\u2194dormant edge re-steers probes and hauler placement. Sustained two-way churn = the hysteresis business case.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  greatest((metadata->'viability'->'transitions'->>'viable->dormant')::int    - lag((metadata->'viability'->'transitions'->>'viable->dormant')::int)    OVER (ORDER BY ts), 0) AS viable_to_dormant,\n  greatest((metadata->'viability'->'transitions'->>'dormant->viable')::int    - lag((metadata->'viability'->'transitions'->>'dormant->viable')::int)    OVER (ORDER BY ts), 0) AS dormant_to_viable,\n  greatest((metadata->'viability'->'transitions'->>'promising->viable')::int  - lag((metadata->'viability'->'transitions'->>'promising->viable')::int)  OVER (ORDER BY ts), 0) AS promising_to_viable,\n  greatest((metadata->'viability'->'transitions'->>'promising->dead')::int    - lag((metadata->'viability'->'transitions'->>'promising->dead')::int)    OVER (ORDER BY ts), 0) AS promising_to_dead\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'viability' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 57
+          },
+          "id": 33
+        },
+        {
+          "type": "stat",
+          "title": "Flaps (total)",
+          "description": "A\u2192B\u2192A within 10min \u2014 placement churned for nothing. Nonzero justifies hysteresis at the boundary (slice 2).",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'viability'->'transitions'->>'flaps')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'viability' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 64
+          },
+          "id": 34
+        },
+        {
+          "type": "stat",
+          "title": "Viable systems (latest)",
+          "description": "",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'viability'->'counts'->>'viable')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'viability' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 64
+          },
+          "id": 35
+        },
+        {
+          "type": "stat",
+          "title": "Dormant systems (latest)",
+          "description": "Was-viable systems gone quiet \u22651h. High + stable = capital parked on past glory; high + churning = see flaps.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'viability'->'counts'->>'dormant')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' AND metadata ? 'viability' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 64
+          },
+          "id": 36
         }
       ]
     }
