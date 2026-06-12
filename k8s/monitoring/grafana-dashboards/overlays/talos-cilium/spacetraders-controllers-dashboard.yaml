@@ -1,0 +1,981 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spacetraders-controllers-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "SpaceTraders"
+data:
+  spacetraders-controllers.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "refresh": "1m",
+      "schemaVersion": 39,
+      "tags": [
+        "spacetraders",
+        "controllers",
+        "promise-theory"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "reset",
+            "label": "Reset",
+            "type": "query",
+            "datasource": {
+              "type": "postgres",
+              "uid": "spacetraders-pg"
+            },
+            "definition": "SELECT DISTINCT reset_id FROM ops_snapshot ORDER BY reset_id DESC",
+            "query": "SELECT DISTINCT reset_id FROM ops_snapshot ORDER BY reset_id DESC",
+            "refresh": 1,
+            "sort": 1,
+            "includeAll": false,
+            "multi": false,
+            "current": {
+              "text": "",
+              "value": ""
+            }
+          }
+        ]
+      },
+      "time": {
+        "from": "now-24h",
+        "to": "now"
+      },
+      "timezone": "browser",
+      "title": "SpaceTraders \u2014 Controllers (Reconcile Loops)",
+      "uid": "spacetraders-controllers",
+      "version": 1,
+      "panels": [
+        {
+          "type": "row",
+          "title": "Capital \u2014 budgets by purpose, floors, crisis posture",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1
+        },
+        {
+          "type": "stat",
+          "title": "Crisis posture (latest)",
+          "description": "CapitalController.crisis_state \u2014 while CRISIS, discretionary budgets below read 0 (TRADE stays open).",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT CASE WHEN metadata->'capital'->>'crisis' = 'true' THEN 1 ELSE 0 END AS crisis FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "OK",
+                      "color": "green"
+                    },
+                    "1": {
+                      "text": "CRISIS",
+                      "color": "red"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 1
+          },
+          "id": 2
+        },
+        {
+          "type": "stat",
+          "title": "Available credits (latest)",
+          "description": "",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'capital'->>'credits')::bigint FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "locale",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 1
+          },
+          "id": 3
+        },
+        {
+          "type": "stat",
+          "title": "Exploit deficit (latest)",
+          "description": "Haulers wanted minus deployed across the funded viable set (exploit reconciler's gap).",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'exploit'->>'deficit')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 1
+          },
+          "id": 4
+        },
+        {
+          "type": "stat",
+          "title": "Coverage deficit (latest)",
+          "description": "Parked-probe slots still to fill across haulered systems.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'coverage'->>'deficit')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 1
+          },
+          "id": 5
+        },
+        {
+          "type": "stat",
+          "title": "Placement intents (latest)",
+          "description": "Ships with a durable home_override currently being converged.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'placement'->>'intents')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 1
+          },
+          "id": 6
+        },
+        {
+          "type": "stat",
+          "title": "Ferries stranded (total)",
+          "description": "Cumulative intents cleared because no gate path existed \u2014 should stay ~0.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT (metadata->'placement'->>'stranded')::int FROM ops_snapshot WHERE reset_id = '$reset' AND agent = 'TB1' ORDER BY ts DESC LIMIT 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 1
+          },
+          "id": 7
+        },
+        {
+          "type": "timeseries",
+          "title": "Capital budgets by purpose (free-to-spend above floor)",
+          "description": "CapitalController.budget() per Purpose. Discretionary lines drop to 0 in crisis; which line sits at 0 tells you which spender is gated.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'capital'->'budgets'->>'trade')::bigint AS trade,\n  (metadata->'capital'->'budgets'->>'gate_investment')::bigint AS gate_investment,\n  (metadata->'capital'->'budgets'->>'expansion')::bigint AS expansion,\n  (metadata->'capital'->'budgets'->>'recon')::bigint AS recon\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "locale",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "id": 8
+        },
+        {
+          "type": "timeseries",
+          "title": "Capital floors by purpose (credits kept untouched)",
+          "description": "Which floor binds when a spend stalls \u2014 the expansion floor scales with hauler count.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'capital'->'floors'->>'trade')::bigint AS trade,\n  (metadata->'capital'->'floors'->>'gate_investment')::bigint AS gate_investment,\n  (metadata->'capital'->'floors'->>'expansion')::bigint AS expansion,\n  (metadata->'capital'->'floors'->>'recon')::bigint AS recon\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "locale",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "id": 9
+        },
+        {
+          "type": "row",
+          "title": "Saturation brake \u2014 the margin \u2192 hauler-count loop (PR #98)",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "id": 10
+        },
+        {
+          "type": "timeseries",
+          "title": "below_floor_ratio (EMA) vs brake threshold",
+          "description": "Share of scored routes rejected below the profit floor. Brake engages at the configured ratio (default 0.5) and freezes hauler buys.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'exploit'->>'below_floor_ratio')::float AS below_floor_ratio,\n  CASE WHEN metadata->'exploit'->>'brake_active' = 'true' THEN 1.0 ELSE 0.0 END AS brake_active\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 13
+          },
+          "id": 11
+        },
+        {
+          "type": "timeseries",
+          "title": "Exploit gap vs deployed haulers",
+          "description": "The reconciler's spec-vs-status gap next to actual fleet size. Healthy: deficit shrinks while the brake is off, freezes while it's on.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'exploit'->>'deficit')::int AS deficit,\n  (ships_by_role->>'HAULER')::int AS haulers,\n  (metadata->'exploit'->>'bought')::int AS bought_last_pass\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 13
+          },
+          "id": 12
+        },
+        {
+          "type": "row",
+          "title": "Placement \u2014 durable intent \u2192 converge via Travel (PR #99)",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 20
+          },
+          "id": 13
+        },
+        {
+          "type": "timeseries",
+          "title": "Live placement intents (ships being delivered)",
+          "description": "ship_home_override count. Persistent high values = ferries not converging (check stranded/AM budget).",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time, (metadata->'placement'->>'intents')::int AS intents FROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 21
+          },
+          "id": 14
+        },
+        {
+          "type": "timeseries",
+          "title": "Converge outcomes per snapshot (delta of cumulative counters)",
+          "description": "Arrived = promise kept. Relocations trending DOWN vs pre-#99 is the churn win; stranded should be ~0.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  greatest((metadata->'placement'->>'arrived')::int    - lag((metadata->'placement'->>'arrived')::int)    OVER (ORDER BY ts), 0) AS arrived,\n  greatest((metadata->'placement'->>'stranded')::int   - lag((metadata->'placement'->>'stranded')::int)   OVER (ORDER BY ts), 0) AS stranded,\n  greatest((metadata->'placement'->>'rehomed')::int    - lag((metadata->'placement'->>'rehomed')::int)    OVER (ORDER BY ts), 0) AS rehomed,\n  greatest((metadata->'placement'->>'relocations')::int - lag((metadata->'placement'->>'relocations')::int) OVER (ORDER BY ts), 0) AS relocations\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 16,
+            "x": 8,
+            "y": 21
+          },
+          "id": 15
+        },
+        {
+          "type": "row",
+          "title": "Probe pipeline \u2014 procurement owner + reconcile loop (PRs #96/#101)",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 28
+          },
+          "id": 16
+        },
+        {
+          "type": "timeseries",
+          "title": "Procurement: requested vs bought (delta per snapshot)",
+          "description": "The dedup/priority value of the single procurement owner: requested >> bought means the glut brake is doing work.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  greatest((metadata->'probe_fleet'->>'requested')::int - lag((metadata->'probe_fleet'->>'requested')::int) OVER (ORDER BY ts), 0) AS requested,\n  greatest((metadata->'probe_fleet'->>'bought')::int    - lag((metadata->'probe_fleet'->>'bought')::int)    OVER (ORDER BY ts), 0) AS bought\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 29
+          },
+          "id": 17
+        },
+        {
+          "type": "timeseries",
+          "title": "Probe reconcile: spec-vs-status classification (last pass)",
+          "description": "How far the probe fleet sits from declared intent each pass. Rising left_idle = placement starving (caps/AM).",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'probe_reconcile'->>'dispatch')::int AS dispatch,\n  (metadata->'probe_reconcile'->>'place')::int AS place,\n  (metadata->'probe_reconcile'->>'in_transit')::int AS in_transit,\n  (metadata->'probe_reconcile'->>'left_idle')::int AS left_idle\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 29
+          },
+          "id": 18
+        },
+        {
+          "type": "timeseries",
+          "title": "Parked probes off best-N (stale placement fraction)",
+          "description": "The gap the stale-placement reactor closes \u2014 sim said 17%\u21922%; this is the live read.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time, (metadata->>'probe_stale_fraction')::float AS stale_fraction FROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 29
+          },
+          "id": 19
+        },
+        {
+          "type": "row",
+          "title": "Antimatter \u2014 per-purpose fuel ceilings (protected band)",
+          "collapsed": false,
+          "panels": [],
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 36
+          },
+          "id": 20
+        },
+        {
+          "type": "timeseries",
+          "title": "Last-hour AM spend vs POSITION / protected ceilings",
+          "description": "Spend between the two lines = POSITION churn deferring while SPREAD/GATE still flow \u2014 the protected band working as designed.",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(ts) AS time,\n  (metadata->'antimatter'->>'spend_hr')::bigint AS spend_hr,\n  (metadata->'antimatter'->>'budget_position')::bigint AS budget_position,\n  (metadata->'antimatter'->>'budget_protected')::bigint AS budget_protected\nFROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND agent = 'TB1' ORDER BY 1"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "locale",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 8,
+                "spanNulls": true,
+                "showPoints": "never"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 37
+          },
+          "id": 21
+        }
+      ]
+    }
