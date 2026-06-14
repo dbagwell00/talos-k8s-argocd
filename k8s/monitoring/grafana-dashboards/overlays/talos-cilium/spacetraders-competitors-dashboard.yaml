@@ -151,6 +151,34 @@ data:
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
           "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/3600)*3600) AS time, side AS metric, sum(units) AS units FROM competitor_transactions WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "row",
+          "title": "Global leaderboard — top of universe (GET /v2 status)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 46 },
+          "id": 103,
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Top agents — credits over time (mostCredits; TURKEYBOI1 = us)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 47 },
+          "id": 30,
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" } }, "overrides": [ { "matcher": { "id": "byName", "options": "TURKEYBOI1" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }, { "id": "custom.lineWidth", "value": 3 } ] } ] },
+          "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, agent AS metric, max(value) AS credits FROM competitor_leaderboard WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND board = 'mostCredits' GROUP BY 1, 2 ORDER BY 1" } ]
+        },
+        {
+          "type": "table",
+          "title": "Latest standings — global top by credits (rank, agent, credits)",
+          "datasource": { "type": "postgres", "uid": "spacetraders-pg" },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 47 },
+          "id": 31,
+          "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "credits" }, "properties": [ { "id": "unit", "value": "short" } ] } ] },
+          "options": { "showHeader": true, "sortBy": [ { "displayName": "rank", "desc": false } ] },
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT rank, agent, value AS credits FROM (SELECT DISTINCT ON (agent) rank, agent, value FROM competitor_leaderboard WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND board = 'mostCredits' ORDER BY agent, ts DESC) x ORDER BY rank" } ]
         }
       ]
     }
