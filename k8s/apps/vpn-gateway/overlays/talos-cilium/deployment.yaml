@@ -17,6 +17,10 @@ spec:
       labels:
         app: vpn-gateway
     spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       containers:
       - env:
         - name: VPN_SERVICE_PROVIDER
