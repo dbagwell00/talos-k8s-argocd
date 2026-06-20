@@ -1,0 +1,18 @@
+# Sim Lab UI on its own Cilium L2 LB IP (HTTP; sibling to spacetraders-web
+# on .142). Separate from the live dashboard so the heavy sim app is isolated.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-sim
+  namespace: spacetraders
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.143"
+spec:
+  type: LoadBalancer
+  selector:
+    app: spacetraders-sim
+  ports:
+  - name: web
+    port: 80
+    targetPort: 8080
+    protocol: TCP

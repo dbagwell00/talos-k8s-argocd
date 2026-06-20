@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spacetraders-sim
+  namespace: spacetraders
+  labels:
+    app: spacetraders-sim
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spacetraders-sim
+  template:
+    metadata:
+      labels:
+        app: spacetraders-sim
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: sim-lab
+        image: registry.dlb.im/spacetraders-sim:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: web
+        env:
+        # Postgres — reuse the live agent's CNPG app secret (same namespace).
+        # Used for the sim_runs table AND the `live` snapshot seeder.
+        - name: PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-pg-app
+              key: username
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-pg-app
+              key: password
+        - name: DATABASE_URL
+          value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders"
+        - name: SIM_LAB_MAX_CONCURRENT
+          value: "2"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          # Sims run the full planner against ~1700 ships — CPU-hungry. This pod
+          # is isolated from the live agent precisely so that's safe.
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "4"
+            memory: 4Gi
