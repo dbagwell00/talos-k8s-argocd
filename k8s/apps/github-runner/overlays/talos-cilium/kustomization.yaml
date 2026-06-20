@@ -6,3 +6,4 @@ resources:
 - externalsecret.yaml
 - serviceaccount.yaml
 - deployment.yaml
+- deployment-sim.yaml
