@@ -47,11 +47,9 @@ spec:
             secretKeyRef:
               name: spacetraders-agent
               key: AGENT_SYMBOL
-        - name: ST_RESET_ID
-          valueFrom:
-            secretKeyRef:
-              name: spacetraders-agent
-              key: ST_RESET_ID
+        # ST_RESET_ID intentionally removed: the agent resolves the current
+        # reset from the token/server at boot (set_current_reset_id) — the
+        # secret went stale and mis-tagged a whole reset's universe.
         # Postgres — compose URI from CNPG app secret
         - name: PG_USER
           valueFrom:
