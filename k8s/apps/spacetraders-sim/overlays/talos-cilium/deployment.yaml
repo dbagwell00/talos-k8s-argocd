@@ -21,6 +21,17 @@ spec:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
+      # Keep the CPU-hungry sim pod off the live agent's node when possible —
+      # preferred, not required, so a constrained cluster can still schedule it.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: spacetraders
       containers:
       - name: sim-lab
         image: registry.dlb.im/spacetraders-sim:latest
@@ -54,9 +65,14 @@ spec:
         resources:
           # Sims run the full planner against ~1700 ships — CPU-hungry. This pod
           # is isolated from the live agent precisely so that's safe.
+          # An A/B experiment pair = 2 sim subprocesses ≈ 1 core each; observed
+          # steady state ~2 cores / ~1Gi with a pair running. Requests reserve
+          # that honestly so the scheduler places the pod on a node with real
+          # headroom instead of packing it beside the live agent; limits leave
+          # room for live-seeded pairs and a future MAX_CONCURRENT bump.
           requests:
-            cpu: 500m
-            memory: 1Gi
+            cpu: 2500m
+            memory: 2Gi
           limits:
-            cpu: "4"
-            memory: 4Gi
+            cpu: "6"
+            memory: 8Gi
