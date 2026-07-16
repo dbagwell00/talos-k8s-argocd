@@ -76,7 +76,7 @@ spec:
           value: "32"
         resources:
           requests:
-            cpu: 200m
-            memory: 256Mi
+            cpu: 20000m
+            memory: 512Mi
           limits:
             memory: 1Gi
