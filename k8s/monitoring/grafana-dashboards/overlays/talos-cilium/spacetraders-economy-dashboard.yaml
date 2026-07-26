@@ -1,0 +1,1613 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spacetraders-economy-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "SpaceTraders"
+data:
+  spacetraders-economy.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "refresh": "1m",
+      "schemaVersion": 39,
+      "tags": [
+        "spacetraders",
+        "economy",
+        "pnl"
+      ],
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "SpaceTraders \u2014 Economy (P&L)",
+      "uid": "spacetraders-economy",
+      "version": 1,
+      "templating": {
+        "list": [
+          {
+            "name": "reset",
+            "label": "Reset",
+            "type": "query",
+            "datasource": {
+              "type": "postgres",
+              "uid": "spacetraders-pg"
+            },
+            "definition": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC",
+            "query": "SELECT DISTINCT reset_id FROM events ORDER BY reset_id DESC",
+            "refresh": 1,
+            "sort": 0,
+            "includeAll": false,
+            "multi": false,
+            "current": {
+              "text": "2026-07-26",
+              "value": "2026-07-26"
+            }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "row",
+          "title": "Profit & loss (events ledger \u2014 cost events carry a positive cost in revenue, per the `jump` convention)",
+          "id": 1,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "title": "Current balance",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 2,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT credits FROM credits_history WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Made (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 3,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS made FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'"
+            }
+          ],
+          "description": "Gross income: trade sale proceeds + charting rewards + contract payments."
+        },
+        {
+          "type": "stat",
+          "title": "Spent (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 4,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) AS spent FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'"
+            }
+          ],
+          "description": "Gross outflow: cost of goods + fuel + antimatter (jumps) + ship purchases + construction deliveries."
+        },
+        {
+          "type": "stat",
+          "title": "Net (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 5,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) - sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) AS net FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Profit margin",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 6,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "green",
+                    "value": 12
+                  }
+                ]
+              },
+              "decimals": 1
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT CASE WHEN sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) > 0 THEN 100.0 * (sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) - sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END)) / sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) END AS margin FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'"
+            }
+          ],
+          "description": "Net / Made. Whater's comparable figure sat around 13%."
+        },
+        {
+          "type": "stat",
+          "title": "Net / hour (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 7,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 1
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT CASE WHEN max(ts) > min(ts) THEN (sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) - sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END)) / ((max(ts) - min(ts)) / 3600.0) END AS per_hr FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Total credits made / spent (cumulative over the selected range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 8,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT time, sum(made) OVER (ORDER BY time) AS \"Made\", sum(spent) OVER (ORDER BY time) AS \"Spent\", sum(made - spent) OVER (ORDER BY time) AS \"Net\" FROM (SELECT to_timestamp(floor(ts/300)*300) AS time, sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS made, sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) AS spent FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1) t ORDER BY time"
+            }
+          ],
+          "description": "Cumulative within the dashboard time range, not since reset \u2014 the events table is too large to scan unfiltered on every refresh."
+        },
+        {
+          "type": "timeseries",
+          "title": "Credits balance over time",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 9,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 20,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, max(credits) AS \"Credits\" FROM credits_history WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Credits per 5-min window \u2014 made, spent, net",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 10,
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS \"Made\", sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) AS \"Spent\", sum(CASE WHEN action IN ('trade','chart') THEN COALESCE(revenue,0) WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) - sum(CASE WHEN action='trade' THEN COALESCE(revenue,0) - COALESCE(profit,0) WHEN action IN ('jump','refuel','purchase_ship') THEN COALESCE(revenue,0) WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) AS \"Net\" FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1"
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Profit by source \u2014 trades vs charting vs contracts",
+          "id": 11,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 21
+          },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Aggregate profit by source (cumulative over range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 12,
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 0,
+            "y": 22
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT time, sum(trades) OVER (ORDER BY time) AS \"Trades\", sum(charts) OVER (ORDER BY time) AS \"Charts\", sum(contracts) OVER (ORDER BY time) AS \"Contracts\" FROM (SELECT to_timestamp(floor(ts/300)*300) AS time, sum(CASE WHEN action='trade' THEN COALESCE(profit,0) ELSE 0 END) AS trades, sum(CASE WHEN action='chart' THEN COALESCE(revenue,0) ELSE 0 END) AS charts, sum(CASE WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS contracts FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1) t ORDER BY time"
+            }
+          ]
+        },
+        {
+          "type": "piechart",
+          "title": "Profit by source (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 13,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 10,
+            "y": 22
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "pieType": "pie",
+            "displayLabels": [
+              "percent"
+            ],
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT sum(CASE WHEN action='trade' THEN COALESCE(profit,0) ELSE 0 END) AS \"Trades\", sum(CASE WHEN action='chart' THEN COALESCE(revenue,0) ELSE 0 END) AS \"Charts\", sum(CASE WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS \"Contracts\" FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset'"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Percent profit by source",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 14,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 22
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "min",
+                "max",
+                "mean",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT time, CASE WHEN tot > 0 THEN 100.0 * trades / tot END AS \"Trades\", CASE WHEN tot > 0 THEN 100.0 * charts / tot END AS \"Charts\", CASE WHEN tot > 0 THEN 100.0 * contracts / tot END AS \"Contracts\" FROM (SELECT to_timestamp(floor(ts/300)*300) AS time, sum(CASE WHEN action='trade' THEN COALESCE(profit,0) ELSE 0 END) AS trades, sum(CASE WHEN action='chart' THEN COALESCE(revenue,0) ELSE 0 END) AS charts, sum(CASE WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS contracts, sum(CASE WHEN action='trade' THEN COALESCE(profit,0) ELSE 0 END) + sum(CASE WHEN action='chart' THEN COALESCE(revenue,0) ELSE 0 END) + sum(CASE WHEN action IN ('contract_fulfilled','contract_accepted') THEN COALESCE(profit,0) ELSE 0 END) AS tot FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1) t ORDER BY time"
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Cost centers \u2014 where the money actually goes",
+          "id": 15,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 30
+          },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Spend by category (per 5-min)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 16,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 31
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "mean",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(CASE WHEN action='trade' THEN COALESCE(revenue,0)-COALESCE(profit,0) ELSE 0 END) AS \"Goods (cost of trade)\", sum(CASE WHEN action='purchase_ship' THEN COALESCE(revenue,0) ELSE 0 END) AS \"Ships\", sum(CASE WHEN action='refuel' THEN COALESCE(revenue,0) ELSE 0 END) AS \"Fuel\", sum(CASE WHEN action='jump' THEN COALESCE(revenue,0) ELSE 0 END) AS \"Antimatter (jumps)\", sum(CASE WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) AS \"Gate / feeds\" FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1"
+            }
+          ],
+          "description": "Ships and Fuel stay flat at zero for resets before the spend telemetry PR landed \u2014 they were never recorded."
+        },
+        {
+          "type": "table",
+          "title": "Spend totals by category (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 17,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 31
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT category, total FROM ( SELECT 'Goods (cost of trade)' AS category, sum(CASE WHEN action='trade' THEN COALESCE(revenue,0)-COALESCE(profit,0) ELSE 0 END) AS total FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' UNION ALL SELECT 'Ships', sum(CASE WHEN action='purchase_ship' THEN COALESCE(revenue,0) ELSE 0 END) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' UNION ALL SELECT 'Fuel', sum(CASE WHEN action='refuel' THEN COALESCE(revenue,0) ELSE 0 END) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' UNION ALL SELECT 'Antimatter (jumps)', sum(CASE WHEN action='jump' THEN COALESCE(revenue,0) ELSE 0 END) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' UNION ALL SELECT 'Gate / feeds', sum(CASE WHEN action IN ('construction_buy','supply_chain_deliver') AND COALESCE(profit,0) < 0 THEN -profit ELSE 0 END) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ) s WHERE total > 0 ORDER BY total DESC"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Fuel usage \u2014 credits spent & units bought",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 18,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 39
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Fuel units bought"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "sum",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(COALESCE(revenue,0)) AS \"Credits spent on fuel\", sum(COALESCE(units,0)) AS \"Fuel units bought\" FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='refuel' GROUP BY 1 ORDER BY 1"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Ship purchases \u2014 credits spent & count",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 19,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 39
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Ships bought"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "sum",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(COALESCE(revenue,0)) AS \"Credits spent on ships\", count(*) AS \"Ships bought\" FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='purchase_ship' GROUP BY 1 ORDER BY 1"
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Trade flow \u2014 volume, yield, and the candidate pool behind it",
+          "id": 20,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 47
+          },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "title": "Trades (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 21,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='trade'"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Avg profit / trade",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 22,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT avg(profit) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='trade'"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Ships (latest)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 23,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "purple",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT ships_total FROM ops_snapshot WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' ORDER BY ts DESC LIMIT 1"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Charts made (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 24,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='chart'"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Charting income (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 25,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT sum(revenue) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='chart'"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Contracts fulfilled (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 26,
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT count(*) FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='contract_fulfilled'"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Trades & net trade profit / 5 min",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 27,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 52
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Trade profit"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "mean",
+                "max",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, count(*) AS \"Trades\", sum(COALESCE(profit,0)) AS \"Trade profit\" FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='trade' GROUP BY 1 ORDER BY 1"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Trade candidates (route_scoring) \u2014 pool size, score, pick rate",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 28,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 52
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Picked %"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Avg score (cr/s)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "calcs": [
+                "mean",
+                "last"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "time_series",
+              "rawQuery": true,
+              "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, count(*) AS \"Candidates scored\", avg(final_pps) AS \"Avg score (cr/s)\", 100.0 * sum(CASE WHEN picked THEN 1 ELSE 0 END) / count(*) AS \"Picked %\" FROM route_scoring WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' GROUP BY 1 ORDER BY 1"
+            }
+          ],
+          "description": "Our equivalent of Whater's Trade Candidates panel: how big the scored pool is, what it is worth, and how much of it we act on."
+        },
+        {
+          "type": "table",
+          "title": "Top goods by trade profit (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 29,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 60
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT good, sum(profit) AS profit, sum(revenue) AS revenue, count(*) AS trades FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action='trade' AND good IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 15"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Biggest spenders \u2014 ships by credits out (range)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "spacetraders-pg"
+          },
+          "id": 30,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 60
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "align": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "postgres",
+                "uid": "spacetraders-pg"
+              },
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT ship, sum(CASE WHEN action='refuel' THEN COALESCE(revenue,0) ELSE 0 END) AS fuel, sum(CASE WHEN action='jump' THEN COALESCE(revenue,0) ELSE 0 END) AS antimatter, sum(CASE WHEN action IN ('refuel','jump') THEN COALESCE(revenue,0) ELSE 0 END) AS total FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action IN ('refuel','jump') GROUP BY 1 ORDER BY 4 DESC LIMIT 15"
+            }
+          ]
+        }
+      ]
+    }
