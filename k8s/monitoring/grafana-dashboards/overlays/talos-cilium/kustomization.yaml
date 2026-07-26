@@ -13,3 +13,4 @@ resources:
 - spacetraders-competitors-dashboard.yaml
 - spacetraders-virus-dashboard.yaml
 - spacetraders-controllers-dashboard.yaml
+- spacetraders-economy-dashboard.yaml

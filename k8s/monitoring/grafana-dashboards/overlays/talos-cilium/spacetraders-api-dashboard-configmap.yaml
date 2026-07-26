@@ -248,7 +248,7 @@ data:
           "id": 30,
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1 } }, "overrides": [] },
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(profit) AS profit FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND profit IS NOT NULL GROUP BY 1 ORDER BY 1" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT to_timestamp(floor(ts/300)*300) AS time, sum(profit) AS profit FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND profit IS NOT NULL GROUP BY 1 ORDER BY 1" } ]
         },
         {
           "type": "table",
@@ -258,7 +258,7 @@ data:
           "id": 31,
           "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
           "options": { "showHeader": true },
-          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT good, sum(profit) AS profit, count(*) AS trades FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND profit IS NOT NULL AND good IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 15" } ]
+          "targets": [ { "refId": "A", "datasource": { "type": "postgres", "uid": "spacetraders-pg" }, "format": "table", "rawQuery": true, "rawSql": "SELECT good, sum(profit) AS profit, count(*) AS trades FROM events WHERE $__unixEpochFilter(ts) AND reset_id = '$reset' AND action = 'trade' AND profit IS NOT NULL AND good IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 15" } ]
         },
         {
           "type": "table",
