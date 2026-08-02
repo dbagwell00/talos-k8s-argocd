@@ -37,8 +37,13 @@ spec:
         image: registry.dlb.im/spacetraders-sim:latest
         imagePullPolicy: Always
         ports:
+        # 8080 sim lab (Service spacetraders-sim, .143)
+        # 8081 fleet dashboard (Service spacetraders-web, .142) — the agent's
+        # UI moved here so it can be redeployed without restarting the agent.
         - containerPort: 8080
           name: web
+        - containerPort: 8081
+          name: dashboard
         env:
         # Postgres — reuse the live agent's CNPG app secret (same namespace).
         # Used for the sim_runs table AND the `live` snapshot seeder.
@@ -54,9 +59,27 @@ spec:
               key: password
         - name: DATABASE_URL
           value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders"
+        # Redis — the dashboard's trade-route manifest + coord-cache panels.
+        # Same urlquery-encoded key the agent uses (raw contains '/' and '+').
+        - name: REDIS_PASSWORD_URL
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-redis
+              key: redis-password-url
+        - name: REDIS_URL
+          value: "redis://:$(REDIS_PASSWORD_URL)@spacetraders-redis-master.spacetraders.svc:6379"
+        # The live agent's control API. The dashboard forwards the ~33 routes
+        # that need the agent's in-memory state (limiter counters, planner.gs,
+        # the scheduler) or mutate it (pause/scrap/navigate/halt/buy/config).
+        # Unset would make the dashboard read-only rather than break it.
+        - name: AGENT_URL
+          value: "http://spacetraders.spacetraders.svc:5173"
         - name: SIM_LAB_MAX_CONCURRENT
           value: "2"
         readinessProbe:
+          # The lab's own health. The dashboard shares the process, so it is
+          # up whenever this is — serve.py gathers both servers and dies if
+          # either does, rather than serving half the UI silently.
           httpGet:
             path: /healthz
             port: 8080

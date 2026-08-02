@@ -1,5 +1,12 @@
 # Dashboard exposed on a Cilium L2 LB IP (HTTP only for now; no cert-manager
 # on talos-cilium yet — wrap with TLS later if/when needed).
+#
+# The URL is unchanged but the pod behind it is not: the dashboard moved OUT of
+# the agent and into the spacetraders-sim image, so the UI can be redeployed
+# without restarting the live trading agent. Hence `app: spacetraders-sim` and
+# port 8081 (the sim lab keeps 8080 on .143). The agent still listens on 5173,
+# but only for its control API, which the dashboard calls from inside the
+# cluster — it is deliberately not exposed on a LoadBalancer.
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,9 +17,9 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: spacetraders
+    app: spacetraders-sim
   ports:
   - name: web
     port: 80
-    targetPort: 5173
+    targetPort: 8081
     protocol: TCP

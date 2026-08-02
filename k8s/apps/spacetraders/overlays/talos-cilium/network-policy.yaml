@@ -1,4 +1,11 @@
-# Ingress to the web dashboard (LB SNATs to pod CIDR = world).
+# Ingress to the agent's control API on 5173.
+#
+# This used to be the dashboard's port. The dashboard moved to the
+# spacetraders-sim pod, which now calls 5173 from inside the cluster — covered
+# by `cluster` below. `world` stays because the port is still reachable from
+# the LAN for ad-hoc curls and because the LB SNATs to the pod CIDR, which
+# Cilium classifies as world; narrowing it is a separate change with its own
+# blast radius.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
