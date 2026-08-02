@@ -73,7 +73,7 @@ spec:
         # the scheduler) or mutate it (pause/scrap/navigate/halt/buy/config).
         # Unset would make the dashboard read-only rather than break it.
         - name: AGENT_URL
-          value: "http://spacetraders.spacetraders.svc:5173"
+          value: "http://spacetraders-control.spacetraders.svc:5173"
         - name: SIM_LAB_MAX_CONCURRENT
           value: "2"
         readinessProbe:

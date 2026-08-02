@@ -23,3 +23,37 @@ spec:
     port: 80
     targetPort: 8081
     protocol: TCP
+
+---
+# The agent's control API, cluster-internal only.
+#
+# The agent never had a Service of its own — it was reachable solely through
+# `spacetraders-web`, because that Service pointed at port 5173 and the
+# dashboard was IN the agent. Moving the dashboard out re-pointed
+# spacetraders-web at the sim pod and left the agent with no DNS name at all,
+# so the dashboard's proxy resolved nothing and every live/control route
+# answered 503 ("Name or service not known"). This is that missing name.
+#
+# Named `-control`, not `-agent`: an ExternalSecret/Secret already owns
+# `spacetraders-agent` in this namespace. Kubernetes would allow the reuse
+# (different kinds), but two unrelated objects sharing a name is a trap for
+# whoever greps next.
+#
+# ClusterIP, not LoadBalancer: the control API mutates the fleet (scrap,
+# navigate, halt, buy) and has no authentication. Its only client is the
+# dashboard, which runs in this cluster. Reaching it from a laptop is
+# `kubectl port-forward`, deliberately.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-control
+  namespace: spacetraders
+spec:
+  type: ClusterIP
+  selector:
+    app: spacetraders
+  ports:
+  - name: control
+    port: 5173
+    targetPort: 5173
+    protocol: TCP
