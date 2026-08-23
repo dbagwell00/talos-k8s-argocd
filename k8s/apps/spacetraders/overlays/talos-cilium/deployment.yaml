@@ -74,9 +74,27 @@ spec:
         # Tuning
         - name: WORKER_POOL_SIZE
           value: "32"
+        # CPU is deliberately REQUEST-ONLY: no `limits.cpu`, so the container
+        # is never cgroup-throttled and may burst across every core the node
+        # can spare. Verified in-pod: `cpu.max` reads "max 100000" (no quota)
+        # and `Cpus_allowed_list` is 0-3.
+        #
+        # The request went 1000m -> 2000m on 2026-08-23. Read the honest
+        # caveat before expecting throughput from it: the hub sat at exactly
+        # 1000m — one core, pinned — while the node ran 31% idle and the
+        # container was already uncapped. That ceiling is CPython's, not the
+        # scheduler's: asyncio drives the planner on a single thread, so the
+        # loop cannot consume a second core no matter what it is granted.
+        # A larger request buys a guaranteed share under contention and costs
+        # nothing here; it does not buy parallelism. Making the planner use
+        # the other cores is a code change (less work per tick, or planning in
+        # its own process), not a manifest change.
+        #
+        # Ceiling: node allocatable is 3950m against 2600m already requested,
+        # so anything above ~2350m makes this pod unschedulable.
         resources:
           requests:
-            cpu: 1000m
+            cpu: 2000m
             memory: 512Mi
           limits:
             memory: 2Gi
