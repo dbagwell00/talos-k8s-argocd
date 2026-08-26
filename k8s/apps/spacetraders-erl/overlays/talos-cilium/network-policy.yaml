@@ -8,7 +8,7 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: allow-spacetraders-erl-control
-  namespace: spacetraders
+  namespace: spacetraders-erl
 spec:
   endpointSelector:
     matchLabels:

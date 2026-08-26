@@ -1,0 +1,19 @@
+# Its own namespace, not `spacetraders`, for exactly one reason: the VPN
+# route-fixup init container needs NET_ADMIN, and PodSecurity `baseline` --
+# Talos's default for every namespace -- forbids adding capabilities.
+#
+# `media` and `vpn-gateway` solve the same problem the same way. Labelling the
+# shared `spacetraders` namespace privileged instead would have loosened
+# enforcement for Postgres, Redis, the live Python agent and the sim as well:
+# four workloads relaxed to admit one.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spacetraders-erl
+  labels:
+    # k8s adds this automatically on every Namespace; declare it so ArgoCD
+    # doesn't perma-diff.
+    kubernetes.io/metadata.name: spacetraders-erl
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
