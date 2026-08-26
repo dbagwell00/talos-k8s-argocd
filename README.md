@@ -61,11 +61,12 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | infrastructure | cloudnative-pg | cilium | CloudNativePG operator (chart 0.22.1) — manages PostgreSQL `Cluster` CRs |
 | infrastructure | coredns | cilium | Cluster CoreDNS `Corefile` (hosts block for `smb.local`, `vault.dlb.im`, `registry.dlb.im`) under GitOps so live edits don't drift |
 | apps | velero | both | Backups → MinIO (S3) · Vault `secret/velero` |
-| apps | github-runner | cilium | Self-hosted GitHub Actions runners (myoung34/github-runner + docker:dind) for the `spacetraders` repo · Vault `secret/github-runner` |
+| apps | github-runner | cilium | Self-hosted GitHub Actions runners (myoung34/github-runner + docker:dind) for the `spacetraders`, `spacetraders-sim` and `spacetraders-erlang` repos · Vault `secret/github-runner` |
 | apps | registry | mesh | Self-hosted Docker registry (`registry:2`) behind Cilium Gateway · LE cert for `registry.dlb.im` · 50Gi Ceph RBD |
 | apps | spacetraders-pg | cilium | PostgreSQL 16 (CNPG, 1 instance, 20Gi RBD), LAN-exposed @ `192.168.4.140:5432` · Vault `secret/spacetraders/pg` |
 | apps | spacetraders-redis | cilium | Redis 7 standalone (Bitnami, 4Gi RBD), LAN-exposed @ `192.168.4.141:6379` · Vault `secret/spacetraders/redis` |
 | apps | spacetraders | cilium | Hub (planner + worker pool + Quart dashboard) from `registry.dlb.im/spacetraders:latest` · dashboard @ `192.168.4.142` · Vault `secret/spacetraders/agent` |
+| apps | spacetraders-erl | cilium | Erlang/OTP agent (`BBPUGZINSPACE`) from `registry.dlb.im/spacetraders-erlang:latest` · egress via multus → vpn-gateway · control API ClusterIP `:5173` · Vault `secret/spacetraders/agent-erl` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
 | apps | bitwarden | mesh | Self-hosted Bitwarden (Helm self-host 1.0.4 + MSSQL) · Vault `secret/bitwarden` · standalone `bitwarden-apps.yaml` |

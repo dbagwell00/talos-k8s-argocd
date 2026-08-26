@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spacetraders-erl
+  namespace: spacetraders
+  labels:
+    app: spacetraders-erl
+spec:
+  replicas: 1
+  # Single-writer, same as the Python agent: the planner assumes exactly one
+  # instance. Recreate avoids two pods racing on the API budget and on the
+  # agent's own fleet during a rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spacetraders-erl
+  template:
+    metadata:
+      annotations:
+        # ── VPN egress ──────────────────────────────────────────────────
+        # A second interface (net1) on the 192.168.3.0/24 macvlan, whose
+        # gateway is the gluetun pod at .254. This is the whole reason the
+        # Erlang agent exists as a separate deployment from the Python one:
+        # its game traffic leaves through the VPN, not through the node.
+        k8s.v1.cni.cncf.io/networks: kube-system/vpn-client-network
+      labels:
+        app: spacetraders-erl
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      initContainers:
+      # Multus gives us net1 but leaves eth0's default route in place, so
+      # everything would still leave via the node. This rewrites the table:
+      # keep cluster and LAN traffic on eth0 (Cilium), then drop eth0's
+      # default so the only remaining default is net1 -> 192.168.3.254 -> VPN.
+      #
+      # The /32 host routes for the node IPs are load-bearing and easy to miss:
+      # net1 has a directly-connected 192.168.3.0/24 route, which would swallow
+      # the node addresses too, and replies to Cilium's LB SNAT would go out
+      # the VPN interface and never arrive.
+      - name: fix-routes
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          ETH0_GW=$(ip route | grep "default.*eth0" | awk '{print $3}')
+          ip route add 10.0.0.0/8 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.4.0/24 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.1.0/24 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.20/32 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.22/32 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.24/32 via $ETH0_GW dev eth0 || true
+          ip route add 192.168.3.26/32 via $ETH0_GW dev eth0 || true
+          ip route del default via $ETH0_GW dev eth0 || true
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+      containers:
+      - name: agent
+        image: registry.dlb.im/spacetraders-erlang:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5173
+          name: control
+        env:
+        # Agent identity (from Vault via ExternalSecret).
+        - name: AGENT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: AGENT_TOKEN
+        - name: AGENT_SYMBOL
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: AGENT_SYMBOL
+        # Headquarters waypoint; the home system is derived from it.
+        - name: ST_HQ
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: ST_HQ
+        - name: ST_DATA_DIR
+          value: /data
+        - name: ST_WORKER_POOL_SIZE
+          value: "32"
+        - name: ST_TICK_MS
+          value: "5000"
+        # Unlike the Python agent, this one is genuinely parallel: the BEAM
+        # runs the planner and every worker across all schedulers. So a CPU
+        # limit here would actually bite, where on the Python pod it was
+        # meaningless. Kept modest because the binding resource is still the
+        # ~2.44 req/s API budget, not compute.
+        resources:
+          requests:
+            cpu: 250m
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        # Liveness is "the VM answers", not "the agent is trading". Tying it to
+        # trading gets the pod killed during a game outage, which is exactly
+        # when a restart helps least.
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5173
+          initialDelaySeconds: 20
+          periodSeconds: 30
+          failureThreshold: 4
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5173
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      # emptyDir, not a PVC: the snapshot is a warm-start convenience and
+      # every byte of it is re-derivable from the API. Losing it on
+      # reschedule costs one bootstrap, not correctness.
+      - name: data
+        emptyDir: {}
+      # Multus removed eth0's default route, so the pod cannot reach the
+      # cluster DNS service the normal way at the moment resolv.conf is
+      # written. Point at gluetun first (it forwards to 1.1.1.1 through the
+      # tunnel, which is what keeps DNS lookups for api.spacetraders.io inside
+      # the VPN), with kube-dns as the fallback for in-cluster names.
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+        - 192.168.3.254
+        - 10.96.0.10
+        searches:
+        - spacetraders.svc.cluster.local
+        - svc.cluster.local
+        - cluster.local
+        options:
+        - name: ndots
+          value: "5"
