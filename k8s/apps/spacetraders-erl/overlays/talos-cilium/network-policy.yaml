@@ -1,9 +1,12 @@
-# Ingress to the Erlang agent's control API on 5173, from inside the cluster
-# only.
+# Two ingress rules, matching the agent's two listeners.
 #
-# Narrower than the Python agent's equivalent, which also allows `world`: this
-# one has no LAN LoadBalancer in front of it, so nothing outside the cluster
-# has a legitimate reason to reach it.
+# 5173 (control -- pause, tick, save) stays cluster-only: it has no
+# authentication and its verbs stop the fleet.
+#
+# 8080 (read-only dashboard) additionally allows `world`, because the LAN
+# LoadBalancer on 192.168.4.144 SNATs to the pod CIDR and Cilium classifies
+# that as world. The listener itself refuses every non-GET method, so what
+# `world` can reach here is reads and nothing else.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -19,6 +22,13 @@ spec:
     toPorts:
     - ports:
       - port: "5173"
+        protocol: TCP
+  - fromEntities:
+    - cluster
+    - world
+    toPorts:
+    - ports:
+      - port: "8080"
         protocol: TCP
 # NOTE: no egress policy. This pod's egress does not go through Cilium at all
 # for anything but cluster-local traffic -- the default route is on the multus

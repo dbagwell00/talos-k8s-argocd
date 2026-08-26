@@ -18,3 +18,30 @@ spec:
     port: 5173
     targetPort: 5173
     protocol: TCP
+
+---
+# The dashboard, on a Cilium L2 LB IP alongside the other spacetraders
+# services (.140 pg, .141 redis, .142 web, .143 sim). HTTP only for now, same
+# as those -- no cert-manager on talos-cilium yet.
+#
+# This points at port 8080, NOT 5173, and that is the whole design. 8080 is a
+# separate listener inside the agent that refuses every non-GET method before
+# routing. 5173 carries the same reads plus /control/pause, /control/tick and
+# friends, which stop the fleet and have no authentication -- so it stays
+# ClusterIP, exactly as the Python agent's control API does.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-erl-web
+  namespace: spacetraders-erl
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.144"
+spec:
+  type: LoadBalancer
+  selector:
+    app: spacetraders-erl
+  ports:
+  - name: web
+    port: 80
+    targetPort: 8080
+    protocol: TCP

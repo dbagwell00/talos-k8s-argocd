@@ -67,6 +67,8 @@ spec:
         ports:
         - containerPort: 5173
           name: control
+        - containerPort: 8080
+          name: web
         env:
         # Agent identity (from Vault via ExternalSecret).
         - name: AGENT_TOKEN
