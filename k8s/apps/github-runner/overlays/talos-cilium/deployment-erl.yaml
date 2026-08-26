@@ -1,0 +1,95 @@
+# Third self-hosted runner, scoped to the spacetraders-erlang repo. A runner
+# registers to exactly one repo, so the Erlang agent's `build` workflow needs
+# its own. Reuses the same registration PAT (github-runner-secret, repo scope
+# works across the owner's repos); only REPO_URL differs. One replica -- the
+# image is built on push to main and that is infrequent.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner-erl
+  namespace: github-runner
+  labels:
+    app: github-runner-erl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-runner-erl
+  template:
+    metadata:
+      labels:
+        app: github-runner-erl
+    spec:
+      serviceAccountName: github-runner
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: dind
+        image: docker:24-dind
+        securityContext:
+          privileged: true
+        env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        args: ["--host=unix:///var/run/docker.sock"]
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run
+        - name: docker-lib
+          mountPath: /var/lib/docker
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+      - name: runner
+        image: myoung34/github-runner:latest
+        securityContext:
+          privileged: true
+        env:
+        - name: DOCKER_HOST
+          value: "unix:///var/run/docker.sock"
+        - name: RUNNER_NAME_PREFIX
+          value: "talos-cilium-runner-erl"
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-runner-secret
+              key: GITHUB_TOKEN
+        # Scoped to the Erlang repo (the shared secret's REPO_URL points at
+        # the Python repo, so override it directly here).
+        - name: REPO_URL
+          value: "https://github.com/dbagwell00/spacetraders-erlang"
+        - name: RUNNER_WORKDIR
+          value: "/tmp/runner"
+        - name: RUNNER_GROUP
+          value: "default"
+        - name: LABELS
+          value: "self-hosted,talos,linux,x64"
+        - name: EPHEMERAL
+          value: "true"
+        - name: DISABLE_AUTO_UPDATE
+          value: "true"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: work
+          mountPath: /tmp/runner
+        - name: docker-sock
+          mountPath: /var/run
+      volumes:
+      - name: work
+        emptyDir: {}
+      - name: docker-sock
+        emptyDir: {}
+      - name: docker-lib
+        emptyDir: {}

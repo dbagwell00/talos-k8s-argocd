@@ -1,0 +1,27 @@
+# Ingress to the Erlang agent's control API on 5173, from inside the cluster
+# only.
+#
+# Narrower than the Python agent's equivalent, which also allows `world`: this
+# one has no LAN LoadBalancer in front of it, so nothing outside the cluster
+# has a legitimate reason to reach it.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-spacetraders-erl-control
+  namespace: spacetraders
+spec:
+  endpointSelector:
+    matchLabels:
+      app: spacetraders-erl
+  ingress:
+  - fromEntities:
+    - cluster
+    toPorts:
+    - ports:
+      - port: "5173"
+        protocol: TCP
+# NOTE: no egress policy. This pod's egress does not go through Cilium at all
+# for anything but cluster-local traffic -- the default route is on the multus
+# macvlan interface pointing at the VPN gateway, so a Cilium egress policy
+# would be policing the wrong path and would mainly serve to break DNS. The
+# actual egress control is gluetun's own firewall (FIREWALL_OUTBOUND_SUBNETS).
