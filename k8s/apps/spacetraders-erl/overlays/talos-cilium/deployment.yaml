@@ -87,6 +87,31 @@ spec:
             secretKeyRef:
               name: spacetraders-erl-agent
               key: ST_HQ
+        # The account-level token, used ONLY to re-register after a weekly
+        # reset. Without it the agent detects the reset, closes its writer
+        # gate and holds -- correct, but it needs a human to get going again.
+        - name: ACCOUNT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: ACCOUNT_TOKEN
+              optional: true
+        # The analytical record: trade ledger, price history, order outcomes,
+        # and the agent-token store that makes reset recovery automatic.
+        # ETS stays the source of truth; losing this degrades history, not
+        # trading (st_history buffers and reconnects).
+        - name: PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-pg
+              key: username
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-pg
+              key: password
+        - name: ST_PG_URL
+          value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_erl"
         - name: ST_DATA_DIR
           value: /data
         - name: ST_WORKER_POOL_SIZE
