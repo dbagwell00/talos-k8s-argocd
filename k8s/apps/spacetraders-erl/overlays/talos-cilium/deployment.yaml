@@ -87,6 +87,21 @@ spec:
             secretKeyRef:
               name: spacetraders-erl-agent
               key: ST_HQ
+        # The faction to register with. It decides the STARTING SYSTEM, so it
+        # decides which universe the agent wakes up in -- including whether
+        # that system's jump gate is already built by an established agent.
+        #
+        # This key has been in the Vault secret all along and was never mapped
+        # into the pod, so `st_config:faction/0` fell through to its "COSMIC"
+        # default on every registration. Found 2026-09-10: the secret said
+        # VOID, the agent registered COSMIC, and landed in X1-F62 next to
+        # HYDRA (32 ships, 14.4M credits) whose gate was already COMPLETE --
+        # so the whole pre-gate phase was unreachable.
+        - name: ST_FACTION
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: ST_FACTION
         # The account-level token, used ONLY to re-register after a weekly
         # reset. Without it the agent detects the reset, closes its writer
         # gate and holds -- correct, but it needs a human to get going again.
