@@ -158,9 +158,29 @@ spec:
           initialDelaySeconds: 20
           periodSeconds: 30
           failureThreshold: 4
+        # Readiness asks the PLANNER, which is the difference that matters.
+        #
+        # /healthz is deliberately dumb -- it returns 200 if the VM answers,
+        # touching nothing else -- and that is right for liveness above: tying
+        # a restart to "is the agent trading" kills the pod during a game
+        # outage, which is when restarting helps least.
+        #
+        # But it was on readiness too, so nothing anywhere asked whether the
+        # agent was actually planning. Measured 2026-09-15 (GOBBLICIDE): the
+        # planner tick ran 16,943ms against a 5,000ms interval, so it was never
+        # idle; every /live/* route that needs st_planner:snapshot/0 is a 5s
+        # gen_server:call and timed out, and the dashboard served its shell
+        # with every panel blank. This pod read 1/1 Running the whole time --
+        # 111 minutes -- because the only question being asked was one the
+        # planner is not involved in answering.
+        #
+        # /readyz asks the planner and answers 503 when it does not reply, so
+        # a wedged planner now shows as NotReady instead of healthy.
+        # Deliberately NOT also the liveness path: a slow tick should take the
+        # pod out of service, not restart it in a loop.
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /readyz
             port: 5173
           initialDelaySeconds: 5
           periodSeconds: 10
