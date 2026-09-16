@@ -1,0 +1,36 @@
+# Crash-recovery snapshots for the Erlang agent (`st_persist`, SPEC.md 3.4).
+#
+# This replaced an `emptyDir`, whose comment read "the snapshot is a warm-start
+# convenience and every byte of it is re-derivable from the API. Losing it on
+# reschedule costs one bootstrap, not correctness."
+#
+# The first half was true and the second stopped being true once charting
+# became the agent's largest income line. `st_persist` writes every 60s and
+# loads before the first tick, so the code was always right -- it was just
+# writing into a tmpfs that dies with the pod, and had never once been read
+# back after a restart. Measured across three rolls on 2026-09-16:
+# reachability returned `status: cold, reachable: 1` each time, the vanguard
+# read `frontier_remains: false`, and charting produced nothing for the first
+# fifteen minutes while the gate graph rebuilt itself against an IP-wide rate
+# limit. That is not one bootstrap; it is the income line, every deploy.
+#
+# ReadWriteOnce is the right access mode and not a limitation: the planner
+# assumes exactly one instance (`replicas: 1`), and the Deployment is already
+# `strategy: Recreate` -- so the old pod releases the volume before the new one
+# needs it, and an RWO claim cannot deadlock a rollout here.
+#
+# 2Gi against ~442KB of live snapshots. The galaxy is the only thing that grows
+# (~16k waypoints, a few MB), and ceph-rbd allows volume expansion if it ever
+# does.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spacetraders-erl-data
+  namespace: spacetraders-erl
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ceph-rbd
+  resources:
+    requests:
+      storage: 2Gi

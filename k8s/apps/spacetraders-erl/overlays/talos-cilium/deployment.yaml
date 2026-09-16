@@ -31,6 +31,17 @@ spec:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
+      # The agent runs as uid/gid 10001 (`stagent`), and a freshly provisioned
+      # RBD volume mounts root-owned 755. Without fsGroup the kubelet never
+      # chowns it, `st_persist:ensure_dir/0` cannot create its directory, and
+      # it takes the deliberate soft-fail path -- "data dir unusable;
+      # snapshots disabled" at warning level -- leaving the agent in exactly
+      # the cold-start state this volume exists to end, but now silently and
+      # with a PVC attached to prove otherwise.
+      #
+      # The emptyDir never needed this: it is created 0777.
+      securityContext:
+        fsGroup: 10001
       initContainers:
       # Multus gives us net1 but leaves eth0's default route in place, so
       # everything would still leave via the node. This rewrites the table:
@@ -185,11 +196,23 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
-      # emptyDir, not a PVC: the snapshot is a warm-start convenience and
-      # every byte of it is re-derivable from the API. Losing it on
-      # reschedule costs one bootstrap, not correctness.
+      # A real volume, because the snapshot was never read back.
+      #
+      # This was an emptyDir on the reasoning that "every byte of it is
+      # re-derivable from the API. Losing it on reschedule costs one bootstrap,
+      # not correctness." Re-derivable it is; cheap it is not. `st_persist`
+      # snapshots every 60s and loads before the first tick, so the agent was
+      # always doing its half -- and every file it ever wrote was thrown away
+      # with the pod.
+      #
+      # Measured across three rolls on 2026-09-16: reachability came back
+      # `status: cold, reachable: 1` each time, the vanguard read
+      # `frontier_remains: false`, and charting -- the largest income line at
+      # ~23k a call -- produced nothing for the first fifteen minutes while the
+      # gate graph rebuilt against an IP-wide rate limit. See pvc.yaml.
       - name: data
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: spacetraders-erl-data
       # Multus removed eth0's default route, so the pod cannot reach the
       # cluster DNS service the normal way at the moment resolv.conf is
       # written. Point at gluetun first (it forwards to 1.1.1.1 through the
