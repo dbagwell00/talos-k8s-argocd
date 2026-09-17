@@ -149,13 +149,42 @@ spec:
         # limit here would actually bite, where on the Python pod it was
         # meaningless. Kept modest because the binding resource is still the
         # ~2.44 req/s API budget, not compute.
+        # **512Mi OOM-killed this pod 51 times in 11 hours** (2026-09-17,
+        # exitCode 137, roughly one kill every five minutes). The readiness
+        # failures that surfaced it were downstream of the restart, not a
+        # cause.
+        #
+        # It is not a leak and it is not live data. Measured on the pod 25
+        # seconds after boot: 364Mi total, 288Mi of it PROCESS HEAP against
+        # 34Mi of ETS -- and a forced GC across all processes took total
+        # 276Mi -> 134Mi, processes 202Mi -> 68Mi. `st_planner`, the biggest
+        # single holder at 93Mi, has an actual state of 7KB.
+        #
+        # The BEAM cannot see this cgroup limit, so it grows toward a ceiling
+        # it does not know about and the kernel kills it. Two retention sites:
+        # the four control-API acceptors block in `prim_inet:accept0` after
+        # serving a response and never allocate again, so they never GC (27Mi
+        # each, 108Mi total, idle); and the periodic planners allocate a large
+        # working set per pass that the generational collector promotes rather
+        # than reclaims.
+        #
+        # This is headroom, not the fix. The fix is `erlang:garbage_collect/0`
+        # in the acceptor loop and `hibernate` on the periodic gen_servers,
+        # which is what would make 512Mi correct rather than merely tight.
+        # Revisit this number once that ships.
+        #
+        # The request moves with it: 128Mi against a real steady state of
+        # ~134Mi post-GC gave the pod Burstable QoS at the bottom of the
+        # eviction order, which is the wrong place for the only thing in this
+        # namespace that earns anything. Node has the room -- memory requests
+        # were at 21% of allocatable when this was written.
         resources:
           requests:
             cpu: 250m
-            memory: 128Mi
+            memory: 256Mi
           limits:
             cpu: "1"
-            memory: 512Mi
+            memory: 1Gi
         volumeMounts:
         - name: data
           mountPath: /data
