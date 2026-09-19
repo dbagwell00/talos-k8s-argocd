@@ -24,15 +24,18 @@ spec:
 # port forwards everything listening behind it. Forwarding this one publishes
 # three authenticated read/advice routes; forwarding .142 would publish the
 # whole operational UI. See serve.py.
+#
+# ClusterIP, not LoadBalancer, as of the TLS change: .145 now belongs to
+# spacetraders-fed-gateway (gateway.yaml), which terminates TLS and forwards
+# here in-cluster. Keeping a LoadBalancer on .145 as well would republish the
+# plaintext API on the published IP and defeat the split described above.
 apiVersion: v1
 kind: Service
 metadata:
   name: spacetraders-fed
   namespace: spacetraders
-  annotations:
-    io.cilium/lb-ipam-ips: "192.168.4.145"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: spacetraders-sim
   ports:

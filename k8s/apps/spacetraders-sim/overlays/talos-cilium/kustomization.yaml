@@ -7,3 +7,5 @@ resources:
 - deployment.yaml
 - externalsecret.yaml
 - service.yaml
+- certificate.yaml
+- gateway.yaml

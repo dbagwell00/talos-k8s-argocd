@@ -79,6 +79,32 @@ hubble:
       enabled: true
       labels:
         release: kube-prometheus-stack
+gatewayAPI:
+  enabled: true
+  # The GatewayClass + Gateway API CRDs are owned by the talos-cilium-gateway-api
+  # Application (same split as talos-mesh). Don't let Cilium's chart re-render the
+  # GatewayClass -- only enable the operator's Gateway controller.
+  #
+  # ORDERING: the operator crashloops if it starts with this on and the Gateway
+  # API CRDs absent. Sync talos-cilium-gateway-api BEFORE this value reaches the
+  # cluster.
+  #
+  # THIS VALUE DOES NOT REACH THE CLUSTER ON ITS OWN. It renders into the
+  # cilium-config ConfigMap, whose entire /data is under ignoreDifferences in
+  # cilium-apps.yaml with RespectIgnoreDifferences=true (the guard that protects
+  # the live-patched MTU: 1450). Argo will show Synced and change nothing. The
+  # ConfigMap must be patched by hand, exactly like the MTU was:
+  #   kubectl -n kube-system patch cm cilium-config --type merge \
+  #     -p '{"data":{"enable-gateway-api":"true","enable-gateway-api-secrets-sync":"true"}}'
+  #   kubectl -n kube-system rollout restart ds/cilium deploy/cilium-operator
+  # It is declared here anyway so the intent is in git and a future `helm
+  # upgrade` that bypasses Argo does not silently turn Gateway API back off.
+  gatewayClass:
+    create: "false"
+# Kept alongside gatewayAPI: ingressController has been `default: true` here since
+# the cluster was built, and flipping the default IngressClass out from under any
+# existing consumer is a separate change. Gateway API is the path forward for new
+# external surfaces; Ingress is not being migrated as part of this.
 ingressController:
   default: true
   enabled: true

@@ -1,0 +1,18 @@
+# Public TLS for the peer-federation API.
+#
+# DNS-01 via Cloudflare, so Let's Encrypt validates by writing a TXT record in
+# the dlb.im zone -- it never connects inbound. Issuance therefore does not
+# depend on the firewall forward being open, and keeps working if you ever close
+# it. Renewal is likewise independent of external reachability.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: spacetraders-fed-tls
+  namespace: spacetraders
+spec:
+  secretName: spacetraders-fed-tls
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  dnsNames:
+  - fed.dlb.im
