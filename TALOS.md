@@ -53,7 +53,7 @@ these patches are layered on. They encode the decisions that make this cluster w
 | `patch.yaml` | `cluster.network.cni.name: none` + `proxy.disabled: true` | Cilium is the CNI **and** the kube-proxy replacement — Talos must not install either. |
 | `node1-patch.yaml` … `node4-patch.yaml` | Per-node hostname, the two interfaces (eth0 external + eth1 internal), routes, nameservers, and the shared **VIP `192.168.4.10`** for the API server | Static addressing; the VIP is the stable control-plane endpoint. |
 | `patch-nbd-module.yaml` | Loads the `nbd` kernel module | Talos has no in-kernel RBD; Ceph RBD volumes are mounted via **rbd-nbd**. |
-| `patch-drop-all.yaml` / `patch-drop-ipv6.yaml` | Kubelet capability + unsafe-sysctl tweaks (`src_valid_mark`, ipv6 toggles) | Required for Cilium datapath / VPN egress pods. |
+| `patch-drop-all.yaml` / `patch-drop-ipv6.yaml` | Kubelet capability + unsafe-sysctl *allowlist* (`src_valid_mark`, ipv6 toggles) | Lets pods request these sysctls. The allowlist is harmless; **setting** `net.ipv4.conf.all.src_valid_mark=1` at the node level is not -- see below. |
 
 All four nodes are control plane (no separate workers); the control-plane taint is removed so
 workloads schedule on them.
@@ -83,3 +83,44 @@ These are gitignored — they hold secrets or are per-environment, and this repo
 These live only on the admin workstation. The cross-cluster **clustermesh** trust is likewise
 established out-of-band (`cilium clustermesh connect`) — see the Cilium notes in the
 [main README](README.md).
+
+## Do not set `net.ipv4.conf.all.src_valid_mark` at the node level
+
+It silently breaks Cilium's TPROXY delivery to the per-node Envoy, which is how
+all Gateway API / L7 traffic reaches the proxy. Symptom: every Gateway reports
+`Programmed: True`, Envoy holds the listener and is bound to the right per-node
+proxy port, the `CILIUM_PRE_mangle` TPROXY rule matches the packet, and
+`ip route get <svc> mark 0x200` resolves to `local ... dev lo table 2004` -- yet
+connections hang. Envoy's `downstream_cx_total` stays at 0. There is no BPF drop
+event and nothing appears on `lo`, because TPROXY assigns the socket in
+PREROUTING and delivers via LOCAL_IN without re-transmitting over `lo`.
+
+Confirmed by toggling it live on `talos-cilium-2`, twice in each direction:
+
+| `all.src_valid_mark` | Gateway |
+|---|---|
+| `1` | TimeoutError |
+| `0` | HTTP 200/404 |
+
+`talos-mesh` has always had `0`, which is why its vault / registry / bitwarden
+Gateways have always worked on the same Cilium 1.17.2, kernel 6.6.60 and Talos
+v1.8.3.
+
+It is not needed by the VPN egress pod. The mechanism is inheritance, not
+per-pod configuration: a new pod netns copies `conf/all` from the host at
+creation time, so while the host was `1` the `vpn-gateway` pod also read `1`,
+and now that the host is `0` a freshly restarted pod reads `0`. It works either
+way -- verified after the change by restarting the pod: WireGuard connected, and
+all six media clients (qbittorrent, sonarr, radarr, prowlarr, profilarr,
+flaresolverr) egress via the VPN exit IP rather than the WAN IP, with their LAN
+UIs still reachable.
+
+Keep the kubelet `allowed-unsafe-sysctls` entry so a pod that genuinely needs it
+can request it per-pod instead of relying on host inheritance.
+
+Apply the removal without a reboot:
+
+```bash
+talosctl -n <node> patch machineconfig --mode=no-reboot \
+  --patch '[{"op":"remove","path":"/machine/sysctls/net.ipv4.conf.all.src_valid_mark"}]'
+```

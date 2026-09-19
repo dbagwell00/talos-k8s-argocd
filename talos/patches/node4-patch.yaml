@@ -32,5 +32,31 @@ machine:
         - SYS_MODULE
 
   sysctls:
-    net.ipv4.conf.all.src_valid_mark: "1"
+    # net.ipv4.conf.all.src_valid_mark deliberately NOT set here.
+    #
+    # Setting it to "1" in the HOST netns silently breaks Cilium's TPROXY
+    # delivery to the per-node Envoy, which is how Gateway API / L7 traffic
+    # reaches the proxy. The packet is marked, the CILIUM_PRE_mangle TPROXY
+    # rule matches it, the route resolves (local ... dev lo table 2004), and
+    # Envoy is listening -- but the socket never receives it. No BPF drop
+    # event, nothing on lo. Connections just hang.
+    #
+    # Verified by toggling it live on talos-cilium-2:
+    #   src_valid_mark=1 -> Gateway times out
+    #   src_valid_mark=0 -> Gateway returns HTTP 200/404
+    # reproduced twice in each direction. talos-mesh has always had 0, which
+    # is why its vault/registry/bitwarden Gateways have always worked.
+    #
+    # It is NOT needed by the VPN egress pod, despite what TALOS.md used to
+    # say. Note the mechanism is inheritance, not per-pod configuration: a new
+    # pod netns copies conf/all from the host at creation, so while the host
+    # was "1" the vpn-gateway pod also read "1", and now that the host is "0"
+    # a freshly restarted pod reads "0". It works either way -- verified after
+    # the change with a restarted pod: WireGuard connected, and all six media
+    # clients (qbittorrent, sonarr, radarr, prowlarr, profilarr, flaresolverr)
+    # egress through the VPN exit IP rather than the WAN IP, with their LAN
+    # UIs still reachable.
+    #
+    # The kubelet allowed-unsafe-sysctls entry stays, so any pod that genuinely
+    # needs it can request it per-pod rather than relying on host inheritance.
     net.ipv6.conf.all.disable_ipv6: "0"

@@ -1,0 +1,76 @@
+# TLS termination for the peer-federation API.
+#
+# The Gateway takes 192.168.4.145 -- the IP the firewall already forwards to --
+# so the forward rule keeps its destination and only changes port, 80 -> 443.
+# spacetraders-fed drops to ClusterIP in service.yaml; leaving it a LoadBalancer
+# would republish the plaintext API on the very IP being published.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: spacetraders-fed-gateway
+  namespace: spacetraders
+spec:
+  gatewayClassName: cilium
+  # spec.addresses, NOT the io.cilium/lb-ipam-ips annotation. Cilium generates
+  # its own `cilium-gateway-<name>` Service and copies no annotations onto it,
+  # so that annotation is inert on a Gateway -- it was set to .145 here once and
+  # LB IPAM handed out .124 anyway. (The talos-mesh Gateways still carry the
+  # dead annotation; harmless there only because nothing depends on the value.)
+  #
+  # Note applicationset.yaml puts /spec of every gateway.networking.k8s.io kind
+  # under ignoreDifferences with RespectIgnoreDifferences=true. Creation applies
+  # this spec fine, but later edits here will NOT sync to a live Gateway -- they
+  # need a delete/recreate or a manual patch.
+  addresses:
+  - type: IPAddress
+    value: 192.168.4.145
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: spacetraders-fed-tls
+---
+# :80 exists only to bounce callers to :443, so a peer on the old http://
+# endpoint gets a 301 rather than a connection refused.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: spacetraders-fed-http-redirect
+  namespace: spacetraders
+spec:
+  parentRefs:
+  - name: spacetraders-fed-gateway
+    sectionName: http
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: spacetraders-fed-route
+  namespace: spacetraders
+spec:
+  parentRefs:
+  - name: spacetraders-fed-gateway
+    sectionName: https
+  hostnames:
+  - fed.dlb.im
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: spacetraders-fed
+      port: 80

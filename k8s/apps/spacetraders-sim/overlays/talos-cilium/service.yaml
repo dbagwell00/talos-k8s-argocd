@@ -25,24 +25,20 @@ spec:
 # three authenticated read/advice routes; forwarding .142 would publish the
 # whole operational UI. See serve.py.
 #
-# Back to a plain LoadBalancer on .145 after the Gateway API attempt was rolled
-# back. Cilium's L7 datapath does not work on this cluster: the BPF datapath
-# marks the SYN for the Envoy proxy port and Envoy is bound and healthy there,
-# but Envoy's listener recorded downstream_cx_total=0 -- the TPROXY handoff
-# never delivers. Plain LoadBalancers are unaffected (they carry real backends
-# and never enter Envoy), which is why every other service here is fine.
+# ClusterIP: .145 belongs to spacetraders-fed-gateway (gateway.yaml), which
+# terminates TLS and forwards here in-cluster.
 #
-# The Certificate stays (certificate.yaml): it is issued, auto-renewing, and
-# costs nothing while TLS termination is re-planned.
+# The earlier attempt at this failed because the nodes set
+# net.ipv4.conf.all.src_valid_mark=1, which silently broke Cilium's TPROXY
+# delivery to Envoy and made every Gateway hang. Removed in talos/patches/;
+# see TALOS.md.
 apiVersion: v1
 kind: Service
 metadata:
   name: spacetraders-fed
   namespace: spacetraders
-  annotations:
-    io.cilium/lb-ipam-ips: "192.168.4.145"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: spacetraders-sim
   ports:
