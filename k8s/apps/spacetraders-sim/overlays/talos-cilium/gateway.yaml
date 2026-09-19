@@ -1,0 +1,67 @@
+# TLS termination for the peer-federation API.
+#
+# The Gateway takes over 192.168.4.145 -- the IP the firewall already forwards
+# to -- so the existing forward rule keeps its destination and only changes
+# port, 80 -> 443. spacetraders-fed drops to ClusterIP in the same change
+# (service.yaml); leaving it a LoadBalancer would keep the plaintext surface
+# live on the very IP being published, which is exactly what the federation
+# split in service.yaml was built to avoid.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: spacetraders-fed-gateway
+  namespace: spacetraders
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.145"
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: spacetraders-fed-tls
+---
+# :80 exists only to bounce callers to :443. A peer that hardcoded the old
+# http:// endpoint gets a 301 rather than a connection refused.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: spacetraders-fed-http-redirect
+  namespace: spacetraders
+spec:
+  parentRefs:
+  - name: spacetraders-fed-gateway
+    sectionName: http
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: spacetraders-fed-route
+  namespace: spacetraders
+spec:
+  parentRefs:
+  - name: spacetraders-fed-gateway
+    sectionName: https
+  hostnames:
+  - fed.dlb.im
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: spacetraders-fed
+      port: 80
