@@ -106,11 +106,17 @@ Confirmed by toggling it live on `talos-cilium-2`, twice in each direction:
 Gateways have always worked on the same Cilium 1.17.2, kernel 6.6.60 and Talos
 v1.8.3.
 
-It was never needed by the VPN egress pod: `net.ipv4.conf.*` is namespaced and
-`vpn-gateway` is not `hostNetwork`, so the node-level value never reached it --
-gluetun sets it inside its own netns (verified `1` in-pod while the host was
-`0`, with the pod healthy). Keep the kubelet `allowed-unsafe-sysctls` entry so a
-pod can still request it per-pod.
+It is not needed by the VPN egress pod. The mechanism is inheritance, not
+per-pod configuration: a new pod netns copies `conf/all` from the host at
+creation time, so while the host was `1` the `vpn-gateway` pod also read `1`,
+and now that the host is `0` a freshly restarted pod reads `0`. It works either
+way -- verified after the change by restarting the pod: WireGuard connected, and
+all six media clients (qbittorrent, sonarr, radarr, prowlarr, profilarr,
+flaresolverr) egress via the VPN exit IP rather than the WAN IP, with their LAN
+UIs still reachable.
+
+Keep the kubelet `allowed-unsafe-sysctls` entry so a pod that genuinely needs it
+can request it per-pod instead of relying on host inheritance.
 
 Apply the removal without a reboot:
 
