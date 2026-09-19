@@ -44,6 +44,10 @@ spec:
           name: web
         - containerPort: 8081
           name: dashboard
+        # 8082 peer federation API (Service spacetraders-fed, .145) — alone on
+        # its own port so it can be exposed without exposing the UI.
+        - containerPort: 8082
+          name: federation
         env:
         # Postgres — reuse the live agent's CNPG app secret (same namespace).
         # Used for the sim_runs table AND the `live` snapshot seeder.
@@ -83,6 +87,15 @@ spec:
             secretKeyRef:
               name: spacetraders-federation
               key: FEDERATION_USERS
+        # HTTP Basic on the sim lab (:8080) and the dashboard (:8081) — same
+        # "user:password,user:password" shape. Both apps answer 503 while this
+        # is unset (webauth.py), so a secret that fails to sync leaves them
+        # shut rather than open. /healthz stays reachable for the probe.
+        - name: UI_USERS
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-federation
+              key: UI_USERS
         - name: SIM_LAB_MAX_CONCURRENT
           value: "2"
         readinessProbe:

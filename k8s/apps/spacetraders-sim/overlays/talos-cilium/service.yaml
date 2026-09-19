@@ -16,3 +16,27 @@ spec:
     port: 80
     targetPort: 8080
     protocol: TCP
+---
+# The peer federation API on its own IP and its own port (:8082 in the pod).
+#
+# Deliberately NOT a second port on spacetraders-web: this is the one surface
+# meant to be reachable from outside the LAN, and a firewall that forwards a
+# port forwards everything listening behind it. Forwarding this one publishes
+# three authenticated read/advice routes; forwarding .142 would publish the
+# whole operational UI. See serve.py.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-fed
+  namespace: spacetraders
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.145"
+spec:
+  type: LoadBalancer
+  selector:
+    app: spacetraders-sim
+  ports:
+  - name: federation
+    port: 80
+    targetPort: 8082
+    protocol: TCP
