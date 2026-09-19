@@ -5,4 +5,5 @@ kind: Kustomization
 # this app only adds the Sim Lab deployment + service into that namespace.
 resources:
 - deployment.yaml
+- externalsecret.yaml
 - service.yaml

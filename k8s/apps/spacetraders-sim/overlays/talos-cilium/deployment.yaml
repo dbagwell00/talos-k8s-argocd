@@ -74,6 +74,15 @@ spec:
         # Unset would make the dashboard read-only rather than break it.
         - name: AGENT_URL
           value: "http://spacetraders-control.spacetraders.svc:5173"
+        # Peer federation (:8081 /api/federation/*) — "peer:password" pairs,
+        # comma separated. The dashboard answers 503 while this is unset, so
+        # an ExternalSecret that fails to sync leaves the map shut rather
+        # than public. Vault: secret/spacetraders/federation.
+        - name: FEDERATION_USERS
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-federation
+              key: FEDERATION_USERS
         - name: SIM_LAB_MAX_CONCURRENT
           value: "2"
         readinessProbe:
