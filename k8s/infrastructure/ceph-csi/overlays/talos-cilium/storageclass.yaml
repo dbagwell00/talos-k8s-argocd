@@ -9,8 +9,6 @@ parameters:
   clusterID: 1707d13d-2588-49fe-ad35-afcaa30faf3e
   pool: vm-storage
   imageFeatures: layering
-  mounter: rbd-nbd
-  mapOptions: lock_on_read,queue_depth=64
   csi.storage.k8s.io/fstype: ext4
   csi.storage.k8s.io/provisioner-secret-name: csi-rbd-secret
   csi.storage.k8s.io/provisioner-secret-namespace: kube-system
