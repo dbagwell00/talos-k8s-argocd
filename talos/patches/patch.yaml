@@ -4,3 +4,9 @@ cluster:
       name: none
   proxy:
     disabled: true
+  # Every node is a control plane, so without this Talos taints all of them
+  # node-role.kubernetes.io/control-plane:NoSchedule and nothing without a
+  # toleration can schedule anywhere. Running pods survive the taint, which
+  # is how it hid until a reboot on 2026-09-24 left ArgoCD, hubble and the
+  # CSI provisioners Pending.
+  allowSchedulingOnControlPlanes: true

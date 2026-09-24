@@ -5,7 +5,9 @@ are provisioned. Argo CD and everything in [`k8s/`](k8s/) assume a running clust
 is how that cluster comes to exist.
 
 > **Scope note.** This documents `talos-cilium`. `talos-mesh` was brought up the same way
-> (Talos on Proxmox, Cilium CNI, kube-proxy-less) with its own addresses/VLANs.
+> (Talos on Proxmox, Cilium CNI, kube-proxy-less) with its own addresses/VLANs. Its VMs were
+> built by hand and adopted into OpenTofu on 2026-09-24 (`mesh.tf`); its Talos patches are not
+> in this repo.
 
 ## Layers, bottom to top
 
@@ -26,11 +28,24 @@ OpenTofu using the `bpg/proxmox` provider. It:
    to the [Talos Image Factory](https://factory.talos.dev), gets a schematic ID, and downloads
    the resulting `nocloud` raw image to each Proxmox node. The schematic just adds the
    `qemu-guest-agent` extension on top of stock Talos `v1.8.3`.
-2. **Creates the VMs** (`main.tf`): one `talos-cilium-N` VM per Proxmox node — 4 cores, 16 GiB,
-   100 GiB virtio disk, QEMU guest agent, and **two NICs**: external (VLAN 3, `192.168.4.0/24`)
-   and internal (VLAN 2, `192.168.3.0/24`), with stable MACs. `ignore_changes` on the NICs so
-   re-applies don't churn networking.
-3. **Outputs** (`outputs.tf`): VM name → node / vmid / IPs.
+2. **Creates the VMs** (`main.tf`): one `talos-cilium-N` VM per Proxmox node (`prox01`–`prox04`)
+   — 8 cores, 16 GiB (24 GiB on node 4, see `vm_memory_mb`), a 100 GiB virtio disk on
+   `local-lvm`, QEMU guest agent, and **two NICs**: external (VLAN 3, `192.168.4.0/24`)
+   and internal (VLAN 2, `192.168.3.0/24`), with stable MACs. `ignore_changes` covers the NICs,
+   so re-applies don't churn networking, and the disk's source image (`disk[0].file_id`), so a
+   new Talos image or a VM that moved hosts never forces a rebuild; Talos upgrades happen in
+   place with `talosctl upgrade`.
+3. **Adopts the talos-mesh VMs** (`mesh.tf`): `talos-mesh-1..3` (VM 9001–9003 on `prox01`,
+   `prox02`, `prox04`), 6 cores / 16 GiB, static addresses through a cloud-init drive on
+   VLAN 5 (`192.168.6.0/24`) and VLAN 4 (`192.168.5.0/24`). The `import` block adopts the
+   existing VMs; once it has been applied it can be deleted.
+4. **Outputs** (`outputs.tf`): VM name → node / vmid / IPs.
+
+**Keep VM disks on `local-lvm` (node-local NVMe), not Ceph.** etcd fsyncs every write, and a
+durable 4k write on the HDD-backed Ceph pool measured ~100 ms against ~4.6 ms on local NVMe;
+etcd wants its WAL fsync p99 under 10 ms. On Ceph, talos-mesh kept losing leader leases
+(kube-controller-manager/kube-scheduler restarted ~3x a day each). etcd already replicates
+across nodes, so node-local disks lose nothing.
 
 Config is all variables ([`variables.tf`](talos/proxmox/variables.tf)); secrets come from
 `terraform.tfvars` (gitignored). Copy [`terraform.tfvars.example`](talos/proxmox/terraform.tfvars.example)
@@ -40,8 +55,12 @@ to start.
 cd talos/proxmox
 cp terraform.tfvars.example terraform.tfvars   # fill in Proxmox API token
 tofu init
+tofu plan    # always read it: a stale config here once planned to destroy talos-cilium-2
 tofu apply
 ```
+
+The state file (`terraform.tfstate`, gitignored) lives only in `talos/proxmox/` on the admin
+workstation. It is the single copy; back it up, or move it to a remote backend.
 
 ## `talos/patches/` — Talos machine config
 
@@ -50,20 +69,28 @@ these patches are layered on. They encode the decisions that make this cluster w
 
 | Patch | What it does | Why |
 |---|---|---|
-| `patch.yaml` | `cluster.network.cni.name: none` + `proxy.disabled: true` | Cilium is the CNI **and** the kube-proxy replacement — Talos must not install either. |
+| `patch.yaml` | `cluster.network.cni.name: none` + `proxy.disabled: true` + `allowSchedulingOnControlPlanes: true` | Cilium is the CNI **and** the kube-proxy replacement — Talos must not install either. Every node is a control plane, so workloads must be allowed onto them (see below). |
 | `node1-patch.yaml` … `node4-patch.yaml` | Per-node hostname, the two interfaces (eth0 external + eth1 internal), routes, nameservers, and the shared **VIP `192.168.4.10`** for the API server | Static addressing; the VIP is the stable control-plane endpoint. |
-| `patch-nbd-module.yaml` | Loads the `nbd` kernel module | Talos has no in-kernel RBD; Ceph RBD volumes are mounted via **rbd-nbd**. |
 | `patch-drop-all.yaml` / `patch-drop-ipv6.yaml` | Kubelet capability + unsafe-sysctl *allowlist* (`src_valid_mark`, ipv6 toggles) | Lets pods request these sysctls. The allowlist is harmless; **setting** `net.ipv4.conf.all.src_valid_mark=1` at the node level is not -- see below. |
 
-All four nodes are control plane (no separate workers); the control-plane taint is removed so
-workloads schedule on them.
+All four nodes are control plane (no separate workers). `allowSchedulingOnControlPlanes: true`
+is what keeps Talos from tainting them `node-role.kubernetes.io/control-plane:NoSchedule`.
+Without it the taint doesn't evict running pods, so it can go unnoticed for months, until a
+reboot recreates pods and they all sit Pending. That happened on 2026-09-24.
+
+**Ceph RBD uses the in-kernel client (krbd); no module or extension is needed.** The Talos
+kernel has `CONFIG_BLK_DEV_RBD=y` and `CONFIG_CEPH_FS=y` built in. An earlier setup assumed
+otherwise and mounted RBD through `rbd-nbd` with the `nbd` module loaded. That served every
+volume's I/O from processes inside the `csi-rbdplugin` pods, so plugin restarts disrupted
+mounted volumes, and sequential writes were about half as fast. talos-mesh never loaded `nbd`,
+so ceph-csi quietly fell back to krbd there all along. Don't bring `nbd` back.
 
 Apply (sketch):
 
 ```bash
 talosctl gen config talos-cilium https://192.168.4.10:6443 --output-dir _out   # _out/ is gitignored
 talosctl machineconfig patch _out/controlplane.yaml --patch @patches/patch.yaml \
-  --patch @patches/node1-patch.yaml --patch @patches/patch-nbd-module.yaml -o node1.yaml
+  --patch @patches/node1-patch.yaml -o node1.yaml
 talosctl apply-config --insecure --nodes 192.168.4.20 --file node1.yaml
 # …repeat per node, then:
 talosctl bootstrap --nodes 192.168.4.20
