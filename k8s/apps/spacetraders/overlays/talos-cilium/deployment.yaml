@@ -90,11 +90,19 @@ spec:
         # the other cores is a code change (less work per tick, or planning in
         # its own process), not a manifest change.
         #
+        # Back to 1000m on 2026-09-24. 30 days of cAdvisor data confirm the
+        # single-thread ceiling: avg 0.23 cores, p95 0.58, max 0.94 — never
+        # above one core. The second 1000m was reserved but unusable, and it
+        # held talos-cilium-1 at 93% CPU requested (near unschedulable) while
+        # the node averaged 35% busy. 1000m still guarantees the one core the
+        # loop can actually use. Raise it again only after the planner goes
+        # multi-process.
+        #
         # Ceiling: node allocatable is 3950m against 2600m already requested,
         # so anything above ~2350m makes this pod unschedulable.
         resources:
           requests:
-            cpu: 2000m
+            cpu: 1000m
             memory: 512Mi
           limits:
             memory: 2Gi
