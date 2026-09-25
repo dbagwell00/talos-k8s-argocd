@@ -56,7 +56,7 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | infrastructure | network-policies | both | CiliumNetworkPolicies (default-deny + allow rules per namespace) |
 | infrastructure | smb-csi | cilium | SMB CSI driver + PVs · Vault `secret/samba` |
 | infrastructure | multus | both | Multus thick-plugin CNI shim (→ Cilium) + VPN NetworkAttachmentDefinitions (cilium) |
-| infrastructure | ceph-csi | both | Ceph RBD + CephFS CSI (rbd-nbd) · Vault `secret/ceph-rbd` + `secret/ceph-cephfs` |
+| infrastructure | ceph-csi | both | Ceph RBD + CephFS CSI (kernel clients: krbd, kcephfs) · Vault `secret/ceph-rbd` + `secret/ceph-cephfs` |
 | infrastructure | cilium | both | CNI (Helm 1.17.2, kube-proxy-less, clustermesh-joined). cilium: MTU 1450 + LB pool/L2 via `cilium-apps.yaml`. mesh: Gateway API via `cilium-mesh-apps.yaml`; LB pool/L2 via appset |
 | infrastructure | cloudnative-pg | cilium | CloudNativePG operator (chart 0.22.1) — manages PostgreSQL `Cluster` CRs |
 | infrastructure | coredns | cilium | Cluster CoreDNS `Corefile` (hosts block for `smb.local`, `vault.dlb.im`, `registry.dlb.im`) under GitOps so live edits don't drift |

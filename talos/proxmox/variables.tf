@@ -18,7 +18,19 @@ variable "proxmox_api_token_secret" {
 variable "proxmox_nodes" {
   description = "List of Proxmox nodes"
   type        = list(string)
-  default     = ["prox01", "prox04", "prox03", "prox04"]
+  default     = ["prox01", "prox02", "prox03", "prox04"]
+}
+
+variable "vm_cores" {
+  description = "vCPUs per Talos VM"
+  type        = number
+  default     = 8
+}
+
+variable "vm_memory_mb" {
+  description = "Memory (MB) per Talos VM, indexed like proxmox_nodes"
+  type        = list(number)
+  default     = [16384, 16384, 16384, 24000]
 }
 
 variable "talos_version" {

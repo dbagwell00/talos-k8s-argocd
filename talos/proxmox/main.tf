@@ -10,12 +10,12 @@ resource "proxmox_virtual_environment_vm" "talos_vm" {
   on_boot = true
 
   cpu {
-    cores = 4
+    cores = var.vm_cores
     type  = "host"
   }
 
   memory {
-    dedicated = 16384
+    dedicated = var.vm_memory_mb[count.index]
   }
 
   agent {
@@ -42,7 +42,8 @@ resource "proxmox_virtual_environment_vm" "talos_vm" {
     interface    = "virtio0"
     size         = 100
     discard      = "on"
-    ssd          = true
+    # No `ssd`: Proxmox ignores the flag on virtio disks, so setting it
+    # only produced a permanent diff.
   }
 
   boot_order = ["virtio0"]
@@ -56,6 +57,10 @@ resource "proxmox_virtual_environment_vm" "talos_vm" {
   lifecycle {
     ignore_changes = [
       network_device,
+      # The image a disk was first created from. Talos upgrades happen in
+      # place via `talosctl upgrade`, so a new image (or a VM that moved
+      # hosts, like 8002) must never force the VM to be recreated.
+      disk[0].file_id,
     ]
   }
 }
