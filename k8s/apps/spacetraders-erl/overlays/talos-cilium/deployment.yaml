@@ -144,6 +144,12 @@ spec:
           value: "32"
         - name: ST_TICK_MS
           value: "5000"
+        # whater's fleet cap: no trade hull past the sum of per-system
+        # targets. Off by default in the image (#269); live 2026-09-26 the
+        # agent bought 52 refining freighters (~139M) into one system,
+        # earning ~6k/hr each against ~50k/hr for a light freighter.
+        - name: ST_POLICY_TRADER_FLEET_CAP
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
