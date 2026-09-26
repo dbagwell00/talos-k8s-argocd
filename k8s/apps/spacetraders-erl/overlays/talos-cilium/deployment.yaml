@@ -190,7 +190,9 @@ spec:
             cpu: 250m
             memory: 512Mi
           limits:
-            cpu: "1"
+            # 1 -> 2 (2026-09-26): 997m of 1000m at 188 ships, ticks 6-8 s
+            # against a 5 s interval.
+            cpu: "2"
             memory: 2Gi
         volumeMounts:
         - name: data
@@ -225,12 +227,17 @@ spec:
         # a wedged planner now shows as NotReady instead of healthy.
         # Deliberately NOT also the liveness path: a slow tick should take the
         # pod out of service, not restart it in a loop.
+        # timeoutSeconds 1 -> 5 (2026-09-26): with the VM pinned at its CPU
+        # limit and 6-8 s ticks, /readyz missed the 1 s default, the pod sat
+        # 0/1 for 30+ min while trading normally, and the LoadBalancer had no
+        # endpoint -- the dashboard and /live/* were unreachable.
         readinessProbe:
           httpGet:
             path: /readyz
             port: 5173
           initialDelaySeconds: 5
           periodSeconds: 10
+          timeoutSeconds: 5
       volumes:
       # A real volume, because the snapshot was never read back.
       #
