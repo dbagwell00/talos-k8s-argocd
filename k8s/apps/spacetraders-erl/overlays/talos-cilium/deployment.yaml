@@ -81,23 +81,22 @@ spec:
         - containerPort: 8080
           name: web
         env:
-        # Agent identity (from Vault via ExternalSecret).
+        # Agent identity. TEMPORARY OVERRIDE (2026-10-01): a fresh agent,
+        # GOBBLICIDE2, runs the gate race from h0 on current main to check the
+        # simulator's ~22 h prediction live (spacetraders-erlang PRs #288-#291).
+        # It was registered from inside the pod with ACCOUNT_TOKEN; its token
+        # lives in the agent's own Postgres token store (st_reset reads that
+        # before the environment), so AGENT_TOKEN is deliberately empty here.
+        # Home X1-NC9 (gate untouched at registration). Revert to the Vault
+        # secretKeyRefs (git history) at the next weekly reset, or set ST_HQ to the new
+        # HQ then -- the agent re-registers itself but cannot learn ST_HQ.
         - name: AGENT_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: spacetraders-erl-agent
-              key: AGENT_TOKEN
+          value: ""
         - name: AGENT_SYMBOL
-          valueFrom:
-            secretKeyRef:
-              name: spacetraders-erl-agent
-              key: AGENT_SYMBOL
+          value: "GOBBLICIDE2"
         # Headquarters waypoint; the home system is derived from it.
         - name: ST_HQ
-          valueFrom:
-            secretKeyRef:
-              name: spacetraders-erl-agent
-              key: ST_HQ
+          value: "X1-NC9-A1"
         # The faction to register with. It decides the STARTING SYSTEM, so it
         # decides which universe the agent wakes up in -- including whether
         # that system's jump gate is already built by an established agent.
