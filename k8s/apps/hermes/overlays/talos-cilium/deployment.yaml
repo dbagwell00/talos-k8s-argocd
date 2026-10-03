@@ -1,0 +1,92 @@
+# Hermes Agent (Nous Research): gateway mode, Telegram only.
+#
+# Nothing listens for the outside world. Telegram is long-polled (outbound
+# only), the OpenAI-compatible API server (API_SERVER_ENABLED) and the web
+# dashboard (HERMES_DASHBOARD) are left off, and there is no Service. For the
+# TUI:  kubectl -n hermes exec -it deploy/hermes -- hermes
+#
+# The agent runs shell commands inside this container by design, so the
+# container is treated as hostile: no service-account token, only the
+# capabilities s6-overlay needs to drop to uid 10000, and egress allowlisted
+# in network-policy.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: hermes
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      # ndots:1 so `api.telegram.org` is looked up as-is rather than walked
+      # through the cluster search domains, which the DNS policy would refuse.
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+      - name: seed-config
+        image: nousresearch/hermes-agent:v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7
+        # After the first start config.yaml is owned by hermes (10000) with
+        # mode 0640, so root needs DAC_OVERRIDE to replace it and FOWNER to
+        # chmod it. install sets the ownership s6 would otherwise fix up.
+        command: ["install", "-o", "10000", "-g", "10000", "-m", "0640",
+                  "/config/config.yaml", "/opt/data/config.yaml"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+            add: ["CHOWN", "DAC_OVERRIDE", "FOWNER"]
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        - name: config
+          mountPath: /config
+          readOnly: true
+      containers:
+      - name: hermes
+        image: nousresearch/hermes-agent:v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7
+        # Image ENTRYPOINT is s6-overlay's /init; leave it in place.
+        args: ["gateway", "run"]
+        envFrom:
+        - secretRef:
+            name: hermes-agent
+            optional: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+            # /init chowns /opt/data, remaps the hermes user, and drops to it;
+            # the root-side s6 supervisors also open files that user owns,
+            # hence DAC_OVERRIDE.
+            add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "KILL"]
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: "2"
+            memory: 2Gi
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: hermes-data
+      - name: config
+        configMap:
+          name: hermes-config

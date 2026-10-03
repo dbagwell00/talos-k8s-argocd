@@ -1,0 +1,21 @@
+# Copied over $HERMES_HOME/config.yaml by the init container on every start,
+# so git is the source of truth: a `hermes model` / `hermes config set` made
+# inside the pod lasts only until the next restart. The image's own startup
+# runs schema migrations on whatever lands here.
+#
+# Qwen runs in Docker on 192.168.1.55 outside the cluster, and Hermes doesn't
+# depend on it being up: no probe or init step touches it, so with Qwen down
+# the pod stays Running and only model calls fail.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: hermes
+data:
+  config.yaml: |
+    model:
+      provider: custom
+      default: qwen
+      base_url: http://192.168.1.55:8082/v1
+      api_key: none
+      context_length: 65536
