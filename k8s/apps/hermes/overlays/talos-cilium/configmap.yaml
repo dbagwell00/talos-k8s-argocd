@@ -3,7 +3,7 @@
 # inside the pod lasts only until the next restart. The image's own startup
 # runs schema migrations on whatever lands here.
 #
-# Qwen runs in Docker on 192.168.1.55 outside the cluster, and Hermes doesn't
+# Qwen runs in Docker (vLLM) on 192.168.1.55 outside the cluster, and Hermes doesn't
 # depend on it being up: no probe or init step touches it, so with Qwen down
 # the pod stays Running and only model calls fail.
 apiVersion: v1
@@ -15,7 +15,7 @@ data:
   config.yaml: |
     model:
       provider: custom
-      default: qwen
-      base_url: http://192.168.1.55:8082/v1
+      default: qwen3.8-27b
+      base_url: http://192.168.1.55:18020/v1
       api_key: none
-      context_length: 65536
+      context_length: 150000
