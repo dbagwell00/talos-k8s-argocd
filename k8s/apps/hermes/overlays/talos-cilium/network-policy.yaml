@@ -1,0 +1,54 @@
+# Default-deny both ways, then allow only:
+#   - DNS to kube-dns, and through Cilium's DNS proxy only for
+#     api.telegram.org: every other name is REFUSED, which also closes DNS as an
+#     exfiltration channel
+#   - Qwen on 192.168.1.55:8082
+#   - Telegram's Bot API on 443, by FQDN plus the 149.154.160.0/20 block
+#     Hermes falls back to when DNS fails
+#
+# Everything else is dropped: the internet in general, the LAN, the cluster,
+# and the kube-apiserver. Hermes's web search, `pip install`, and skill-hub
+# downloads won't work until a destination for them is added here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  # An empty rule allows nothing but puts the endpoint in ingress default-deny.
+  # `kubectl exec` goes through the kubelet, not the pod network, so it still works.
+  ingress:
+  - {}
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+        k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: ANY
+      rules:
+        dns:
+        - matchName: api.telegram.org
+  - toFQDNs:
+    - matchName: api.telegram.org
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP
+  - toCIDR:
+    - 149.154.160.0/20
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP
+  - toCIDR:
+    - 192.168.1.55/32
+    toPorts:
+    - ports:
+      - port: "8082"
+        protocol: TCP

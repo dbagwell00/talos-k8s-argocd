@@ -1,0 +1,14 @@
+# $HERMES_HOME (/opt/data): sessions, memories, skills, logs. RWO is fine:
+# one replica, strategy Recreate.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-data
+  namespace: hermes
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ceph-rbd
+  resources:
+    requests:
+      storage: 5Gi

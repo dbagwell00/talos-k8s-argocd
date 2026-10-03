@@ -1,0 +1,13 @@
+# Talos default PSA is `baseline`, which this pod satisfies: it starts as root
+# only so s6-overlay's /init can chown /opt/data and drop to the `hermes` user
+# (uid 10000) via s6-setuidgid. Every capability beyond the four that needs is
+# dropped in the Deployment.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hermes
+  labels:
+    kubernetes.io/metadata.name: hermes
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
