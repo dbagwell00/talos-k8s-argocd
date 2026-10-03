@@ -2,7 +2,7 @@
 #   - DNS to kube-dns, and through Cilium's DNS proxy only for
 #     api.telegram.org: every other name is REFUSED, which also closes DNS as an
 #     exfiltration channel
-#   - Qwen on 192.168.1.55:8082
+#   - Qwen on 192.168.1.55:18020
 #   - Telegram's Bot API on 443, by FQDN plus the 149.154.160.0/20 block
 #     Hermes falls back to when DNS fails
 #
@@ -50,5 +50,5 @@ spec:
     - 192.168.1.55/32
     toPorts:
     - ports:
-      - port: "8082"
+      - port: "18020"
         protocol: TCP
