@@ -1,0 +1,65 @@
+# st-readonly: in from Hermes only; out to exactly its four upstreams.
+# The agents' and Loki's own ingress policies already admit `cluster`.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: st-readonly
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: st-readonly
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        app: hermes
+    toPorts:
+    - ports:
+      - port: "8080"
+        protocol: TCP
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+        k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: ANY
+      rules:
+        dns:
+        - matchName: spacetraders-erl-web.spacetraders-erl.svc.cluster.local
+        - matchName: spacetraders-control.spacetraders.svc.cluster.local
+        - matchName: loki.monitoring.svc.cluster.local
+        - matchName: api.spacetraders.io
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: spacetraders-erl
+        app: spacetraders-erl
+    toPorts:
+    - ports:
+      - port: "8080"
+        protocol: TCP
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: spacetraders
+        app: spacetraders
+    toPorts:
+    - ports:
+      - port: "5173"
+        protocol: TCP
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: monitoring
+        app.kubernetes.io/name: loki
+        app.kubernetes.io/component: single-binary
+    toPorts:
+    - ports:
+      - port: "3100"
+        protocol: TCP
+  - toFQDNs:
+    - matchName: api.spacetraders.io
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP

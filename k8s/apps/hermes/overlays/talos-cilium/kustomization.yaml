@@ -8,3 +8,16 @@ resources:
 - pvc.yaml
 - deployment.yaml
 - network-policy.yaml
+- st-readonly-configmap.yaml
+- st-readonly.yaml
+- st-readonly-network-policy.yaml
+
+# Hashed name: editing the skill changes the ConfigMap name, which rolls the
+# Hermes pod, so the init container installs the new copy without a manual
+# restart.
+configMapGenerator:
+- name: hermes-skill-spacetraders
+  namespace: hermes
+  files:
+  - skills/spacetraders-ops/SKILL.md
+  - skills/spacetraders-ops/scripts/st.py

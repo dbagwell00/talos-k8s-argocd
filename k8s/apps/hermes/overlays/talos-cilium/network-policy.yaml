@@ -1,8 +1,10 @@
 # Default-deny both ways, then allow only:
 #   - DNS to kube-dns, and through Cilium's DNS proxy only for
-#     api.telegram.org: every other name is REFUSED, which also closes DNS as an
-#     exfiltration channel
+#     api.telegram.org and st-readonly: every other name is REFUSED, which
+#     also closes DNS as an exfiltration channel
 #   - Qwen on 192.168.1.55:18020
+#   - st-readonly (same namespace), GET only: the read-only gateway to the
+#     SpaceTraders agents, their logs, and the public SpaceTraders API
 #   - Telegram's Bot API on 443, by FQDN plus the 149.154.160.0/20 block
 #     Hermes falls back to when DNS fails
 #
@@ -34,6 +36,7 @@ spec:
       rules:
         dns:
         - matchName: api.telegram.org
+        - matchName: st-readonly.hermes.svc.cluster.local
   - toFQDNs:
     - matchName: api.telegram.org
     toPorts:
@@ -52,3 +55,14 @@ spec:
     - ports:
       - port: "18020"
         protocol: TCP
+  # GET enforced at L7 as well as in the gateway itself.
+  - toEndpoints:
+    - matchLabels:
+        app: st-readonly
+    toPorts:
+    - ports:
+      - port: "8080"
+        protocol: TCP
+      rules:
+        http:
+        - method: GET

@@ -43,8 +43,17 @@ spec:
         # After the first start config.yaml is owned by hermes (10000) with
         # mode 0640, so root needs DAC_OVERRIDE to replace it and FOWNER to
         # chmod it. install sets the ownership s6 would otherwise fix up.
-        command: ["install", "-o", "10000", "-g", "10000", "-m", "0640",
-                  "/config/config.yaml", "/opt/data/config.yaml"]
+        # The spacetraders-ops skill is installed the same way, so the copy
+        # in git always wins over any edit made inside the pod.
+        command:
+        - sh
+        - -ec
+        - |
+          install -o 10000 -g 10000 -m 0640 /config/config.yaml /opt/data/config.yaml
+          d=/opt/data/skills/spacetraders/spacetraders-ops
+          install -d -o 10000 -g 10000 -m 0755 /opt/data/skills/spacetraders "$d" "$d/scripts"
+          install -o 10000 -g 10000 -m 0644 /skill/SKILL.md "$d/SKILL.md"
+          install -o 10000 -g 10000 -m 0755 /skill/st.py "$d/scripts/st.py"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -55,6 +64,9 @@ spec:
           mountPath: /opt/data
         - name: config
           mountPath: /config
+          readOnly: true
+        - name: skill-spacetraders
+          mountPath: /skill
           readOnly: true
       containers:
       - name: hermes
@@ -90,3 +102,6 @@ spec:
       - name: config
         configMap:
           name: hermes-config
+      - name: skill-spacetraders
+        configMap:
+          name: hermes-skill-spacetraders

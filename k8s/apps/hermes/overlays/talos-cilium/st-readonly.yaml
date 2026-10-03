@@ -1,0 +1,84 @@
+# Read-only gateway between Hermes and the SpaceTraders agents. Routes and
+# rationale live in st-readonly-configmap.yaml; who may reach it, and what
+# it may reach, in st-readonly-network-policy.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: st-readonly
+  namespace: hermes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: st-readonly
+  template:
+    metadata:
+      labels:
+        app: st-readonly
+      annotations:
+        # Bump to roll the pod after an nginx.conf change (nginx reads its
+        # config only at startup).
+        config-rev: "3"
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: nginx
+        image: nginxinc/nginx-unprivileged:1.31.6-alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af
+        # Skip the image's entrypoint scripts: they rewrite files under
+        # /etc/nginx, which is read-only here.
+        command: ["nginx", "-g", "daemon off;"]
+        ports:
+        - containerPort: 8080
+          name: http
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          periodSeconds: 10
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 200m
+            memory: 64Mi
+      volumes:
+      - name: config
+        configMap:
+          name: st-readonly
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: st-readonly
+  namespace: hermes
+spec:
+  type: ClusterIP
+  selector:
+    app: st-readonly
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
