@@ -62,3 +62,19 @@ systemctl daemon-reload
 Consumers: the Hermes `homelab-health` skill and its scheduled jobs
 ([`k8s/apps/hermes`](../../k8s/apps/hermes/README.md)). The same metrics are available to
 Grafana and Alertmanager.
+
+## Ceph mgr prometheus module
+
+Separately from this collector, the Ceph manager's built-in exporter was turned on
+(2026-10-04) for per-OSD metrics the collector can't cheaply produce:
+
+```sh
+ceph mgr module enable prometheus     # listens on :9283 on every mgr (prox01-03)
+```
+
+Enabling it restarts the active mgr once; the cluster stays HEALTH_OK. Only the active
+mgr serves data, and standbys return an empty 200. Prometheus scrapes all three as job
+`ceph` (in `kube-prometheus-stack` values), so failover needs no change. Useful series:
+`ceph_osd_apply_latency_ms` / `ceph_osd_commit_latency_ms`, `ceph_osd_up` / `ceph_osd_in`,
+`ceph_daemon_health_metrics{type="SLOW_OPS"}`, and `ceph_osd_metadata` (join on
+`ceph_daemon` for `hostname`). To undo: `ceph mgr module disable prometheus`.

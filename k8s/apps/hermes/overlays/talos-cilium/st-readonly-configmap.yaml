@@ -104,6 +104,10 @@ data:
         velero_failed_26h        "sum%20by%20%28schedule%29%20%28increase%28velero_backup_partial_failure_total%7Bschedule%21%3D%22%22%7D%5B26h%5D%29%20%2B%20increase%28velero_backup_failure_total%7Bschedule%21%3D%22%22%7D%5B26h%5D%29%29";
         eso_not_ready            "min_over_time%28externalsecret_status_condition%7Bcondition%3D%22Ready%22%2Cstatus%3D%22False%22%7D%5B10m%5D%29%20%3D%3D%201";
         argocd_apps              "argocd_app_info";
+        ceph_osd_latency         "avg_over_time%28ceph_osd_apply_latency_ms%5B15m%5D%29%20%2A%20on%20%28ceph_daemon%29%20group_left%20%28hostname%29%20ceph_osd_metadata";
+        ceph_osd_up              "ceph_osd_up%20%2A%20on%20%28ceph_daemon%29%20group_left%20%28hostname%29%20ceph_osd_metadata";
+        ceph_osd_in              "ceph_osd_in%20%2A%20on%20%28ceph_daemon%29%20group_left%20%28hostname%29%20ceph_osd_metadata";
+        ceph_slow_ops            "max_over_time%28ceph_daemon_health_metrics%7Btype%3D%22SLOW_OPS%22%7D%5B15m%5D%29%20%3E%200";
       }
 
       server {

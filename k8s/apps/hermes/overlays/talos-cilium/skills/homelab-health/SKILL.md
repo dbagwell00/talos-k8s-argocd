@@ -36,6 +36,9 @@ The checks come from real incidents on this cluster:
 - **Samba panic storms.** These show up as core files piling up.
   Between 03:20 and 04:00 they are usually a UniFi switch firmware upgrade.
 - **Ceph** health checks (SLOW_OPS etc.), pool capacity, root-disk space on prox01-04.
+- **Ceph OSDs** (32 HDDs, no flash DB/WAL): down/out, slow ops per daemon, and
+  15-min apply latency per OSD against the cluster median. Slow OSDs have
+  preceded past Samba incidents.
 - **Blue Iris cameras.** Blue Iris records every camera continuously to
   CephFS. A camera with no write for 5 minutes has stopped streaming or
   recording. Also watched: alert images (AI/motion still firing) and old
