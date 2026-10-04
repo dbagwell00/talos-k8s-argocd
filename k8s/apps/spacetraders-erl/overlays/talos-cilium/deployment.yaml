@@ -150,6 +150,13 @@ spec:
         # earning ~6k/hr each against ~50k/hr for a light freighter.
         - name: ST_POLICY_TRADER_FLEET_CAP
           value: "on"
+        # The land-grab bundle (spacetraders-erlang #298): pre-gate yard survey
+        # by market signature + gate watch, asteroids last, relay density one
+        # probe per system, relay batch buys, no home restock post-gate.
+        # Sim A/B 2026-10-04 (28 paired seeds, h0-h72): net worth +161%,
+        # 28/28; credits at gate+24h 56M -> 152M.
+        - name: ST_POLICY_LAND_GRAB
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
