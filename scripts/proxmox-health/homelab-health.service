@@ -1,0 +1,14 @@
+[Unit]
+Description=Collect Samba/CTDB/CephFS/Ceph health for node-exporter
+After=ctdb.service
+
+[Service]
+Type=oneshot
+Environment=TMPDIR=/var/lib/prometheus/node-exporter
+ExecStart=/bin/sh -o pipefail -c "/usr/local/sbin/homelab-health | sponge /var/lib/prometheus/node-exporter/homelab_health.prom"
+TimeoutStartSec=50
+Nice=10
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes

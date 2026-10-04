@@ -1,5 +1,6 @@
 # nginx config for st-readonly: the only door Hermes has to the SpaceTraders
-# agents, their logs, and the public SpaceTraders API.
+# agents, their logs, the public SpaceTraders API, and a fixed set of
+# Prometheus queries (Proxmox/CTDB/Samba/Ceph and SpaceTraders pod health).
 #
 # Every route is an explicit GET-only allowlist. The agents' control APIs
 # carry fleet-mutating verbs (pause, halt, buy, scrap) with no auth, so
@@ -74,6 +75,23 @@ data:
         py  "%7Bnamespace%3D%22spacetraders%22%2Capp%3D%22spacetraders%22%7D";
       }
 
+      # Prometheus: a fixed menu of instant queries, by name. The caller
+      # never writes PromQL. Pre-encoded so nothing it sends reaches the query.
+      map $prom_name $prom_query {
+        default "";
+        homelab                  "%7B__name__%3D~%22homelab_.%2A%22%7D";
+        host_up                  "up%7Bjob%3D%22proxmox-node-exporter%22%7D";
+        rootfs_free              "node_filesystem_avail_bytes%7Bjob%3D%22proxmox-node-exporter%22%2Cmountpoint%3D%22%2F%22%7D%20%2F%20node_filesystem_size_bytes%7Bjob%3D%22proxmox-node-exporter%22%2Cmountpoint%3D%22%2F%22%7D";
+        ctdb_gen_changes_1h      "changes%28homelab_ctdb_generation%5B1h%5D%29";
+        ctdb_recoveries_max_15m  "max_over_time%28homelab_ctdb_recoveries_5m%5B15m%5D%29";
+        samba_cores_max_1h       "max_over_time%28homelab_samba_core_files_5m%5B1h%5D%29";
+        st_deploy_spec           "kube_deployment_spec_replicas%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%2Cdeployment%3D~%22spacetraders%7Cspacetraders-erl%22%7D";
+        st_deploy_avail          "kube_deployment_status_replicas_available%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%2Cdeployment%3D~%22spacetraders%7Cspacetraders-erl%22%7D";
+        st_pods_ready            "kube_pod_status_ready%7Bnamespace%3D%22spacetraders%22%2Ccondition%3D%22true%22%2Cpod%3D~%22spacetraders-pg-.%2A%7Cspacetraders-redis-master-.%2A%22%7D";
+        st_restarts_1h           "increase%28kube_pod_container_status_restarts_total%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D%5B1h%5D%29%20%3E%200";
+        st_pvc_used              "kubelet_volume_stats_used_bytes%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D%20%2F%20kubelet_volume_stats_capacity_bytes%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D";
+      }
+
       server {
         listen 8080;
         default_type application/json;
@@ -118,6 +136,14 @@ data:
           proxy_set_header Host api.spacetraders.io;
           proxy_ssl_name api.spacetraders.io;
           proxy_pass https://$up/v2/agents/$sym;
+        }
+
+        # Prometheus, fixed queries only (see the map above).
+        location ~ "^/prom/(?<pq>[a-z0-9_]{1,40})$" {
+          set $prom_name $pq;
+          if ($prom_query = "") { return 404 '{"error":"unknown query"}\n'; }
+          set $up prom-prometheus.monitoring.svc.cluster.local;
+          proxy_pass http://$up:9090/api/v1/query?query=$prom_query;
         }
 
         location / { return 404 '{"error":"not on the allowlist"}\n'; }

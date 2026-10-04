@@ -21,3 +21,8 @@ configMapGenerator:
   files:
   - skills/spacetraders-ops/SKILL.md
   - skills/spacetraders-ops/scripts/st.py
+- name: hermes-skill-homelab
+  namespace: hermes
+  files:
+  - skills/homelab-health/SKILL.md
+  - skills/homelab-health/scripts/health.py
