@@ -90,6 +90,8 @@ data:
         st_pods_ready            "kube_pod_status_ready%7Bnamespace%3D%22spacetraders%22%2Ccondition%3D%22true%22%2Cpod%3D~%22spacetraders-pg-.%2A%7Cspacetraders-redis-master-.%2A%22%7D";
         st_restarts_1h           "increase%28kube_pod_container_status_restarts_total%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D%5B1h%5D%29%20%3E%200";
         st_pvc_used              "kubelet_volume_stats_used_bytes%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D%20%2F%20kubelet_volume_stats_capacity_bytes%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D";
+        bi_camera_age            "time%28%29%20-%20max%20by%20%28camera%29%20%28max_over_time%28homelab_blueiris_camera_last_write_seconds%5B7d%5D%29%29";
+        bi_bitrate               "max%20by%20%28camera%29%20%28rate%28homelab_blueiris_camera_segment_bytes%5B10m%5D%29%29";
       }
 
       server {

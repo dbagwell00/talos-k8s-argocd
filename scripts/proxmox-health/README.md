@@ -22,6 +22,11 @@ account. That's why the homelab watch needs no SSH access to the hosts.
 | `homelab_cephfs_mounted`, `homelab_cephfs_readable` | **Evicted CephFS**: still mounted, but returns EACCES, so CTDB loses its recovery lock |
 | `homelab_samba_core_files_5m`, `homelab_samba_core_bytes` | **Panic storms** (41 GB of cores in 7 min on 2026-09-09) |
 | `homelab_ceph_health_status`, `homelab_ceph_health_check{check,severity}` | Ceph health (SLOW_OPS etc.); the mgr prometheus module is off |
+| `homelab_ceph_raw_used_ratio`, `homelab_ceph_pool_{used_ratio,max_avail_bytes,stored_bytes}{pool}` | Capacity. Blue Iris keeps about 86 TB on `cephfs-data` |
+| `homelab_blueiris_camera_last_write_seconds{camera}` | **Camera stopped streaming or recording.** Blue Iris (VM 107) records continuously to `/mnt/cephfs/blueiris/new/` in hourly `.bvr` segments, and the open segment's mtime advances while the camera streams. No Blue Iris login needed. |
+| `homelab_blueiris_camera_segment_bytes{camera}` | Per-camera bitrate, via `rate()` |
+| `homelab_blueiris_alert_last_seconds` | AI/motion alerts still firing (`alerts/` JPEGs) |
+| `homelab_blueiris_new_files`, `homelab_blueiris_new_oldest_seconds` | Rotation from `new/` to `stored/` stuck |
 | `homelab_unit_active{unit}` | ctdb, smbd, nmbd, winbind |
 | `homelab_health_last_run_seconds` | Staleness of the collector itself |
 
