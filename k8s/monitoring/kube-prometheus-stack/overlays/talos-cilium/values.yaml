@@ -105,6 +105,21 @@ prometheus:
             labels:
               cluster: proxmox
 
+      # Ceph mgr prometheus module (enabled 2026-10-04): per-OSD apply/commit
+      # latency, up/in, per-daemon SLOW_OPS, pool and PG stats. Only the active
+      # mgr serves data; standbys answer 200 with an empty body, so listing all
+      # three makes failover transparent. honor_labels keeps the module's own
+      # ceph_daemon/instance labels.
+      - job_name: 'ceph'
+        honor_labels: true
+        static_configs:
+          - targets:
+            - '192.168.1.230:9283'
+            - '192.168.1.232:9283'
+            - '192.168.1.234:9283'
+            labels:
+              cluster: proxmox
+
       - job_name: 'windows-exporter'
         static_configs:
           - targets:

@@ -200,6 +200,31 @@ def evaluate():
     if cores:
         F.append("Samba cores: " + ", ".join(f"{h} {v / 1e6:.0f} MB" for h, v in sorted(cores.items())))
 
+    # ---- Ceph OSDs (mgr prometheus module) ------------------------------------------
+    try:
+        lat = {m["ceph_daemon"]: (v, m.get("hostname", "?")) for m, v in prom("ceph_osd_latency")}
+        if not lat:
+            raise RuntimeError("no ceph_osd_apply_latency_ms series")
+        for name, key, sev, word in (("ceph_osd_up", "osd_down", "CRIT", "down"),
+                                     ("ceph_osd_in", "osd_out", "WARN", "out")):
+            for m, v in prom(name):
+                if v < 1:
+                    bad(f"{key}:{m['ceph_daemon']}", sev, f"Ceph {m['ceph_daemon']} on {m.get('hostname', '?')} is {word}")
+        for m, v in prom("ceph_slow_ops"):
+            bad(f"slowops:{m['ceph_daemon']}", "WARN", f"Ceph {m['ceph_daemon']} reported {int(v)} slow op(s) in the last 15 min")
+        vals = sorted(v for v, _ in lat.values())
+        med = vals[len(vals) // 2]
+        for d, (v, h) in lat.items():
+            if v > 1000:
+                bad(f"osdlat:{d}", "CRIT", f"Ceph {d} on {h}: {v:.0f} ms apply latency (15-min avg)")
+            elif v > max(250, 4 * med):
+                bad(f"osdlat:{d}", "WARN", f"Ceph {d} on {h}: {v:.0f} ms apply latency (15-min avg, median {med:.0f} ms)")
+        worst = sorted(lat.items(), key=lambda kv: -kv[1][0])[:3]
+        F.append(f"Ceph OSDs: {len(lat)}, median apply latency {med:.0f} ms; slowest "
+                 + ", ".join(f"{d}@{h} {v:.0f} ms" for d, (v, h) in worst))
+    except Exception as e:
+        bad("ceph_osd_metrics", "WARN", f"Ceph OSD metrics unavailable ({e}); is the mgr prometheus module on?")
+
     # ---- Ceph capacity --------------------------------------------------------
     pools = {}
     for m, v in by.get("homelab_ceph_pool_used_ratio", []):
