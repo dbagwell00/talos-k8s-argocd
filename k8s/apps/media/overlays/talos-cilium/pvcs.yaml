@@ -62,3 +62,27 @@ spec:
     requests:
       storage: 10Gi
   storageClassName: ceph-rbd
+---
+# The SMB downloads share (static PV smb-media, in smb-csi). It was applied by
+# hand and lived outside git; it's declared here, unchanged, so it can carry
+# the exclude label.
+#
+# Excluded from Velero: it's a 100Ti download scratch area on the NAS, not
+# state, and the pod annotations already skip it for file-level backup. Backing
+# up the PVC object itself made Velero's CSI plugin look up its (empty) storage
+# class and fail, which marked every media-daily backup PartiallyFailed.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-downloads
+  namespace: media
+  labels:
+    velero.io/exclude-from-backup: "true"
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Ti
+  storageClassName: ""
+  volumeName: smb-media
