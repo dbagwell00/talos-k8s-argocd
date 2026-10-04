@@ -1,0 +1,62 @@
+# In: Prometheus only. Out: exactly the probe targets in probes.yaml.
+# The exporter will probe any URL it's asked to, so the egress list -- not
+# the exporter -- is what keeps it from being a cluster-side port scanner.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: blackbox-exporter
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        app.kubernetes.io/name: prometheus
+    toPorts:
+    - ports:
+      - port: "9115"
+        protocol: TCP
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+        k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: ANY
+      rules:
+        dns:
+        - matchName: vault.dlb.im
+        - matchName: registry.dlb.im
+        - matchName: bw.dlb.im
+  # Home Assistant (VM 101)
+  - toCIDR: [192.168.1.37/32]
+    toPorts:
+    - ports:
+      - port: "8123"
+        protocol: TCP
+  # Blue Iris (VM 107)
+  - toCIDR: [192.168.1.44/32]
+    toPorts:
+    - ports:
+      - port: "8081"
+        protocol: TCP
+  # Pi-hole (VM 100): web UI and DNS
+  - toCIDR: [192.168.1.231/32]
+    toPorts:
+    - ports:
+      - port: "80"
+        protocol: TCP
+      - port: "53"
+        protocol: UDP
+      - port: "53"
+        protocol: TCP
+  # talos-mesh Gateway LBs: vault, registry, bitwarden
+  - toCIDR: [192.168.6.121/32, 192.168.6.122/32, 192.168.6.130/32]
+    toPorts:
+    - ports:
+      - port: "443"
+        protocol: TCP

@@ -487,3 +487,13 @@ kube-state-metrics:
   customLabels:
     app: kube-state-metrics
     env: production
+
+# Not scrapeable on this cluster, so their *Down alerts fired permanently and
+# buried real ones: Cilium replaces kube-proxy (kubeProxyReplacement), and
+# Talos binds kube-controller-manager and kube-scheduler to localhost.
+kubeProxy:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false

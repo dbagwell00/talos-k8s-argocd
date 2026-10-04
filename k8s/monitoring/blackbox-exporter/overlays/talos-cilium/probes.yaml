@@ -1,0 +1,162 @@
+# One Probe per service so each carries a `service` label. HTTPS probes also
+# export probe_ssl_earliest_cert_expiry, which covers cert-manager renewals.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: homeassistant
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: http_2xx
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: homeassistant
+      static:
+      - http://192.168.1.37:8123/manifest.json
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: blueiris
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: http_up_or_401
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: blueiris
+      static:
+      - http://192.168.1.44:8081/
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: pihole-web
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: http_2xx
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: pihole-web
+      static:
+      - http://192.168.1.231/admin/
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: pihole-dns
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: dns_resolves
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: pihole-dns
+      static:
+      - 192.168.1.231:53
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: pihole-blocking
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: dns_blocks_ads
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: pihole-blocking
+      static:
+      - 192.168.1.231:53
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: vault
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: vault_unsealed
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: vault
+      static:
+      - https://vault.dlb.im/v1/sys/health
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: registry
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: http_up_or_401
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: registry
+      static:
+      - https://registry.dlb.im/v2/
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: bitwarden
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  jobName: blackbox
+  interval: 60s
+  module: http_2xx
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      labels:
+        service: bitwarden
+      static:
+      - https://bw.dlb.im/alive
