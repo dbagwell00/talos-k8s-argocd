@@ -1,0 +1,59 @@
+# Scrape targets for components installed outside this chart. All three
+# already served metrics that nothing collected.
+#
+# Velero: last successful backup per schedule (velero_backup_last_successful_timestamp).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: velero
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  namespaceSelector:
+    matchNames: [velero]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: velero
+  endpoints:
+  - port: http-monitoring
+    interval: 60s
+---
+# Argo CD: per-app health and sync (argocd_app_info). Argo CD itself isn't in
+# this repo; its metrics port is opened to Prometheus in network-policies
+# (cnp-argocd.yaml).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-application-controller
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  namespaceSelector:
+    matchNames: [argocd]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-metrics
+  endpoints:
+  - port: metrics
+    interval: 60s
+---
+# External Secrets: per-ExternalSecret Ready condition. The chart was
+# installed without a metrics Service, so scrape the controller pod directly.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: external-secrets
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  namespaceSelector:
+    matchNames: [external-secrets]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: external-secrets
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 60s

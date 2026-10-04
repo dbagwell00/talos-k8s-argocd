@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph, Blue Iris recording, and the
+"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph, Blue Iris recording, the
+Home Assistant / Pi-hole / Vault / Bitwarden / registry endpoints, pods on both
+clusters, backups, secret sync, Argo CD, UniFi firmware flashes, and the
 SpaceTraders pods.
 
 Reads only the st-readonly gateway's fixed Prometheus queries plus the two
@@ -40,6 +42,18 @@ HINT = {
     "camera": "check the camera's feed in the Blue Iris UI (http://192.168.1.44:8081); a dead camera, a network drop, or Blue Iris itself stopped",
     "bi_rotation": "Blue Iris didn't move it to stored/; check Blue Iris clip storage settings, or move/delete the file by hand",
 }
+# blackbox `service` label -> (severity when down, what it means)
+PROBES = {
+    "homeassistant": ("CRIT", "Home Assistant (192.168.1.37:8123) not answering"),
+    "blueiris": ("CRIT", "Blue Iris web server (192.168.1.44:8081) not answering"),
+    "pihole-dns": ("CRIT", "Pi-hole (192.168.1.231) not resolving DNS"),
+    "pihole-blocking": ("WARN", "Pi-hole answers but no longer blocks ads"),
+    "pihole-web": ("WARN", "Pi-hole web UI not answering"),
+    "vault": ("CRIT", "Vault sealed or down: ESO can't sync secrets on either cluster; unseal vault-0/1/2 on talos-mesh"),
+    "registry": ("WARN", "registry.dlb.im not answering"),
+    "bitwarden": ("WARN", "Bitwarden (bw.dlb.im) not answering"),
+}
+SKIP_NS = {"spacetraders", "spacetraders-erl"}  # covered by the SpaceTraders block
 CAM_STALE = 300          # s without a write before a camera counts as not recording
 ALERT_QUIET = 12 * 3600  # s without any alert image
 
@@ -226,6 +240,109 @@ def evaluate():
     if oldest and now_s - oldest > 2 * 86400:
         since = datetime.fromtimestamp(oldest).astimezone().strftime("%b %-d")
         bad("bi_rotation", "WARN", f"a Blue Iris segment from {since} is still in new/", "bi_rotation")
+
+    # ---- Services (blackbox probes) -------------------------------------------
+    try:
+        probes = {m.get("service", m.get("instance", "?")): v for m, v in prom("probes")}
+        for svc, (sev, text) in PROBES.items():
+            if svc not in probes:
+                bad(f"probe_missing:{svc}", "WARN", f"no probe result for {svc} (blackbox exporter down?)")
+            elif probes[svc] < 1:
+                bad(f"probe:{svc}", sev, text)
+        up = sorted(s_ for s_, v in probes.items() if v >= 1)
+        F.append(f"Services up: {', '.join(up) or 'none'}")
+        for m, days in prom("cert_days"):
+            svc = m.get("service", "?")
+            if days < 3:
+                bad(f"cert:{svc}", "CRIT", f"TLS cert for {svc} expires in {days:.1f} days")
+            elif days < 14:
+                bad(f"cert:{svc}", "WARN", f"TLS cert for {svc} expires in {days:.0f} days (cert-manager renewal failing?)")
+    except Exception as e:
+        bad("probes", "WARN", f"service probes unavailable ({e})")
+
+    # ---- Kubernetes, both clusters (kube-state-metrics) ---------------------------
+    def where(m):
+        return f"{m.get('cluster', 'talos-cilium')}/{m.get('namespace', '?')}"
+
+    try:
+        for name, label, what in (("k8s_deploy_unavail", "deployment", "replica(s) unavailable"),
+                                  ("k8s_sts_unready", "statefulset", "replica(s) not ready"),
+                                  ("k8s_ds_unavail", "daemonset", "pod(s) unavailable")):
+            for m, v in prom(name):
+                if m.get("namespace") in SKIP_NS:
+                    continue
+                bad(f"k8s:{where(m)}/{m.get(label)}", "CRIT",
+                    f"{where(m)} {label} {m.get(label)}: {int(v)} {what} for 10+ min")
+        for m, _ in prom("k8s_waiting"):
+            if m.get("namespace") in SKIP_NS:
+                continue
+            bad(f"wait:{where(m)}/{m.get('pod')}", "CRIT",
+                f"{where(m)} pod {m.get('pod')} stuck in {m.get('reason')}")
+        for m, _ in prom("k8s_pending"):
+            bad(f"pending:{where(m)}/{m.get('pod')}", "WARN", f"{where(m)} pod {m.get('pod')} Pending for 10+ min")
+        for m, v in prom("pvc_used"):
+            if m.get("namespace") in SKIP_NS:
+                continue
+            bad(f"pvc:{where(m)}/{m.get('persistentvolumeclaim')}", "CRIT" if v > 0.95 else "WARN",
+                f"PVC {where(m)}/{m.get('persistentvolumeclaim')} {100 * v:.0f}% full")
+    except Exception as e:
+        bad("k8s_metrics", "WARN", f"cluster pod metrics unavailable ({e})")
+
+    # ---- Backups, secrets, GitOps ----------------------------------------------------
+    try:
+        ages = prom("velero_age")
+        failed = {m.get("schedule", "?"): v for m, v in prom("velero_failed_26h")}
+        for sched, n in failed.items():
+            if n >= 0.5:
+                bad(f"velero_fail:{sched}", "WARN",
+                    f"Velero schedule {sched}: {round(n)} backup(s) failed or partially failed in the last day "
+                    f"(`velero backup describe <name> --details` in the velero pod shows the item)")
+        if not ages and not failed:
+            bad("velero_none", "WARN", "no Velero backup metrics (velero down?)")
+        elif not ages:
+            bad("velero_never", "WARN", "no fully successful Velero backup since the velero pod started")
+        for m, age in ages:
+            sched = m.get("schedule", "?")
+            if age > 50 * 3600:
+                bad(f"velero:{sched}", "CRIT", f"Velero schedule {sched}: last successful backup {age / 3600:.0f}h ago")
+            elif age > 26 * 3600:
+                bad(f"velero:{sched}", "WARN", f"Velero schedule {sched}: last successful backup {age / 3600:.0f}h ago")
+            else:
+                F.append(f"Velero {sched}: last good backup {age / 3600:.0f}h ago")
+    except Exception as e:
+        bad("velero_metrics", "WARN", f"Velero metrics unavailable ({e})")
+    try:
+        for m, _ in prom("eso_not_ready"):
+            bad(f"eso:{m.get('namespace')}/{m.get('name')}", "WARN",
+                f"ExternalSecret {m.get('namespace')}/{m.get('name')} not syncing from Vault")
+    except Exception:
+        pass
+    try:
+        apps = prom("argocd_apps")
+        if not apps:
+            raise RuntimeError("no argocd_app_info series")
+        sick = [m for m, _ in apps if m.get("health_status") not in ("Healthy", "Progressing")]
+        for m in sick:
+            bad(f"argo:{m.get('name')}", "WARN", f"Argo CD app {m.get('name')} is {m.get('health_status')}")
+        drift = sorted(m.get("name") for m, _ in apps if m.get("sync_status") == "OutOfSync")
+        F.append(f"Argo CD: {len(apps) - len(sick)}/{len(apps)} apps healthy"
+                 + (f"; OutOfSync: {', '.join(drift)}" if drift else ""))
+    except Exception as e:
+        bad("argo_metrics", "WARN", f"Argo CD app metrics unavailable ({e})")
+
+    # ---- UniFi firmware flashes (Loki) --------------------------------------------
+    try:
+        res = get("/syslog/firmware").get("data", {}).get("result", [])
+        hosts = {}
+        for st in res:
+            h = st.get("stream", {}).get("host", "?")
+            for ts, _ in st.get("values", []):
+                hosts[h] = min(hosts.get(h, int(ts)), int(ts))
+        for h, ts in sorted(hosts.items()):
+            t = datetime.fromtimestamp(ts / 1e9).astimezone().strftime("%a %-I:%M %p")
+            bad(f"firmware:{h}", "WARN", f"UniFi {h} flashed firmware {t} (the nightly auto-upgrade; it has caused CTDB/Samba outages)")
+    except Exception:
+        pass
 
     # ---- SpaceTraders pods ------------------------------------------------------
     spec = {}

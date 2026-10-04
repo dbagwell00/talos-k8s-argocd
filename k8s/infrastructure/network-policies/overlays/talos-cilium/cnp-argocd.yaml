@@ -85,3 +85,25 @@ spec:
   ingress:
     - fromEntities:
         - kube-apiserver
+---
+# Prometheus scrapes argocd_app_info from the application controller (8082,
+# via the argocd-metrics Service). allow-argocd-internal only admits the
+# argocd namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-argocd-metrics-from-prometheus
+  namespace: argocd
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: monitoring
+        app.kubernetes.io/name: prometheus
+    toPorts:
+    - ports:
+      - port: "8082"
+        protocol: TCP

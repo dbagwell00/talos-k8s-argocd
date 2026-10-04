@@ -1,6 +1,6 @@
 ---
 name: homelab-health
-description: Health of the homelab's shared storage, the security cameras, and the SpaceTraders pods — Proxmox hosts, Samba/SMB, CTDB, CephFS, Ceph capacity, Blue Iris recording per camera, and the SpaceTraders Postgres, Redis, and agent deployments. Use when the user asks if the homelab, NAS, SMB shares, Samba, CTDB, Ceph, the cameras, Blue Iris, recordings, the Proxmox hosts, or the SpaceTraders infrastructure is healthy, or asks about a homelab watch alert.
+description: Health of the whole homelab — Proxmox hosts, Samba/SMB, CTDB, CephFS, Ceph capacity, Blue Iris recording per camera, Home Assistant, Pi-hole, Vault (sealed?), Bitwarden, the registry, TLS certs, pods on both Kubernetes clusters, Velero backups, External Secrets sync, Argo CD apps, UniFi firmware upgrades, and the SpaceTraders Postgres, Redis, and agents. Use when the user asks whether anything in the homelab is broken or healthy, about any of those services, or about a homelab watch alert.
 version: 1.0.0
 metadata:
   hermes:
@@ -42,6 +42,17 @@ The checks come from real incidents on this cluster:
   files stuck in `new/` (rotation to `stored/` broken). The per-camera
   bitrate is in the report. Camera names: AptDoor, BDPTZ, BPTZ, BackDoor,
   DPTZ, FWide, FrontDoor, GWide, IGW, SWide.
+- **Services** (blackbox probes): Home Assistant, Blue Iris web, Pi-hole
+  (resolving *and* still blocking), Vault (a sealed Vault means no secret
+  syncs anywhere; it needs a manual unseal), Bitwarden, the registry, and
+  TLS expiry on the `*.dlb.im` certs.
+- **Kubernetes, both clusters**: any deployment/statefulset/daemonset short
+  of replicas, pods crash-looping or failing to pull, Pending 10+ min, or
+  any PVC over 85%. Problems must last 10 min, so rollouts don't alarm.
+- **Velero** last successful backup per schedule, **ExternalSecrets** not
+  syncing, **Argo CD** apps not Healthy (OutOfSync is listed, not alarmed).
+- **UniFi firmware flashes** in the last 24h. The nightly auto-upgrade
+  reboots switches and has caused two CTDB/Samba outages.
 - **SpaceTraders**: deployment replicas, Postgres/Redis readiness, restarts,
   PVC fill, and whether both agents' APIs answer. An agent scaled to 0 is
   reported, not alarmed: they're stopped that way on purpose.

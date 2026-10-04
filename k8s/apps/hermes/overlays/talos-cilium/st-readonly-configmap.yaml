@@ -92,6 +92,18 @@ data:
         st_pvc_used              "kubelet_volume_stats_used_bytes%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D%20%2F%20kubelet_volume_stats_capacity_bytes%7Bnamespace%3D~%22spacetraders%7Cspacetraders-erl%22%7D";
         bi_camera_age            "time%28%29%20-%20max%20by%20%28camera%29%20%28max_over_time%28homelab_blueiris_camera_last_write_seconds%5B7d%5D%29%29";
         bi_bitrate               "max%20by%20%28camera%29%20%28rate%28homelab_blueiris_camera_segment_bytes%5B10m%5D%29%29";
+        probes                   "probe_success%7Bjob%3D%22blackbox%22%7D";
+        cert_days                "%28probe_ssl_earliest_cert_expiry%7Bjob%3D%22blackbox%22%7D%20-%20time%28%29%29%20%2F%2086400";
+        k8s_deploy_unavail       "min_over_time%28kube_deployment_status_replicas_unavailable%5B10m%5D%29%20%3E%200";
+        k8s_sts_unready          "min_over_time%28%28kube_statefulset_replicas%20-%20kube_statefulset_status_replicas_ready%29%5B10m%3A1m%5D%29%20%3E%200";
+        k8s_ds_unavail           "min_over_time%28kube_daemonset_status_number_unavailable%5B10m%5D%29%20%3E%200";
+        k8s_waiting              "min_over_time%28kube_pod_container_status_waiting_reason%7Breason%3D~%22CrashLoopBackOff%7CImagePullBackOff%7CErrImagePull%7CCreateContainerError%7CCreateContainerConfigError%7CInvalidImageName%22%7D%5B10m%5D%29%20%3D%3D%201";
+        k8s_pending              "%28%28time%28%29%20-%20kube_pod_created%29%20%3E%20600%29%20and%20on%20%28namespace%2C%20pod%29%20%28kube_pod_status_phase%7Bphase%3D%22Pending%22%7D%20%3D%3D%201%29";
+        pvc_used                 "kubelet_volume_stats_used_bytes%20%2F%20kubelet_volume_stats_capacity_bytes%20%3E%200.85";
+        velero_age               "time%28%29%20-%20velero_backup_last_successful_timestamp%7Bschedule%21%3D%22%22%7D";
+        velero_failed_26h        "sum%20by%20%28schedule%29%20%28increase%28velero_backup_partial_failure_total%7Bschedule%21%3D%22%22%7D%5B26h%5D%29%20%2B%20increase%28velero_backup_failure_total%7Bschedule%21%3D%22%22%7D%5B26h%5D%29%29";
+        eso_not_ready            "min_over_time%28externalsecret_status_condition%7Bcondition%3D%22Ready%22%2Cstatus%3D%22False%22%7D%5B10m%5D%29%20%3D%3D%201";
+        argocd_apps              "argocd_app_info";
       }
 
       server {
@@ -138,6 +150,13 @@ data:
           proxy_set_header Host api.spacetraders.io;
           proxy_ssl_name api.spacetraders.io;
           proxy_pass https://$up/v2/agents/$sym;
+        }
+
+        # UniFi firmware flashes, last 24h. The nightly auto-upgrade reboots the
+        # switches and has twice taken down CTDB/Samba (see proxmox-health).
+        location = /syslog/firmware {
+          set $up loki.monitoring.svc.cluster.local;
+          proxy_pass http://$up:3100/loki/api/v1/query_range?query=%7Bjob%3D%22syslog%22%7D%20%7C~%20%22%28%3Fi%29%28flash%20firmware%7CManaged%20-%3E%20Upgrade%29%22&since=24h&limit=50&direction=backward;
         }
 
         # Prometheus, fixed queries only (see the map above).

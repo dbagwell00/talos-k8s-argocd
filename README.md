@@ -80,6 +80,7 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | monitoring | promtail | cilium | Log shipper + UniFi syslog receiver |
 | monitoring | grafana-dashboards | cilium | UniFi + Windows-exporter dashboard ConfigMaps |
 | monitoring | logging-services | cilium | External LoadBalancer Services (Loki / syslog) |
+| monitoring | blackbox-exporter | cilium | Probes for things without metrics: Home Assistant, Pi-hole (resolves + blocks), Blue Iris, Vault seal state, Bitwarden/registry, `*.dlb.im` TLS expiry. Egress locked to those targets |
 | monitoring | kube-prometheus-stack | both | Prometheus/Grafana/Alertmanager · Vault `secret/grafana` + `secret/alertmanager` (mesh remote-writes to cilium) |
 
 ## Host monitoring
@@ -88,8 +89,9 @@ The Proxmox hosts run a small textfile collector,
 [`scripts/proxmox-health`](scripts/proxmox-health/README.md), that publishes
 Samba/CTDB/CephFS/Ceph health through their existing node-exporters: recovery rate and
 Generation, public-IP vs smbd-listener mismatches, CephFS readability, core-dump rate, and
-Ceph health checks. The Hermes agent reads these (plus the SpaceTraders pod metrics) every
-15 minutes and messages on Telegram when something changes, with a full digest at 8am.
+Ceph health checks, and Blue Iris recording per camera. The Hermes agent reads these, together
+with the blackbox probes, pod health on both clusters, Velero, External Secrets, and Argo CD
+metrics, every 15 minutes and messages on Telegram when something changes, with a full digest at 8am.
 
 ## Secrets
 

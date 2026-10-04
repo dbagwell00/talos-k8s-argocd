@@ -1,0 +1,132 @@
+# Blackbox exporter: probes services that have no metrics of their own --
+# the Home Assistant, Pi-hole, and Blue Iris VMs, Vault's seal state, and TLS
+# expiry on the *.dlb.im gateways. Targets are in probes.yaml; Prometheus
+# scrapes them through this exporter. Consumers: Grafana, Alertmanager, and
+# Hermes's homelab-health watch.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+data:
+  blackbox.yml: |
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 10s
+        http:
+          preferred_ip_protocol: ip4
+          follow_redirects: true
+      # Up = the server answers, including "log in first". Blue Iris and the
+      # registry API return 401 to anonymous requests, and no credentials are
+      # given to this exporter on purpose.
+      http_up_or_401:
+        prober: http
+        timeout: 10s
+        http:
+          preferred_ip_protocol: ip4
+          valid_status_codes: [200, 401]
+      # /v1/sys/health: 200 active, 429 unsealed standby, 473 perf standby.
+      # Sealed is 503 and fails the probe -- which is the point: Vault on
+      # talos-mesh uses manual unseal, and while it's sealed ESO can't sync
+      # any secret on either cluster.
+      vault_unsealed:
+        prober: http
+        timeout: 10s
+        http:
+          preferred_ip_protocol: ip4
+          valid_status_codes: [200, 429, 473]
+      dns_resolves:
+        prober: dns
+        timeout: 5s
+        dns:
+          preferred_ip_protocol: ip4
+          transport_protocol: udp
+          query_name: example.com
+          query_type: A
+          valid_rcodes: [NOERROR]
+          validate_answer_rrs:
+            fail_if_none_matches_regexp: ['.*\tIN\tA\t.*']
+      # Pi-hole answering is not the same as Pi-hole blocking.
+      dns_blocks_ads:
+        prober: dns
+        timeout: 5s
+        dns:
+          preferred_ip_protocol: ip4
+          transport_protocol: udp
+          query_name: doubleclick.net
+          query_type: A
+          validate_answer_rrs:
+            fail_if_none_matches_regexp: ['.*\tIN\tA\t0\.0\.0\.0$']
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: blackbox-exporter
+      annotations:
+        # Bump after editing blackbox.yml (read at startup).
+        config-rev: "1"
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: blackbox-exporter
+        image: prom/blackbox-exporter:v0.28.0@sha256:e753ff9f3fc458d02cca5eddab5a77e1c175eee484a8925ac7d524f04366c2fc
+        args:
+        - --config.file=/config/blackbox.yml
+        ports:
+        - containerPort: 9115
+          name: http
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        readinessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9115
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      volumes:
+      - name: config
+        configMap:
+          name: blackbox-exporter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+spec:
+  selector:
+    app.kubernetes.io/name: blackbox-exporter
+  ports:
+  - name: http
+    port: 9115
+    targetPort: 9115
