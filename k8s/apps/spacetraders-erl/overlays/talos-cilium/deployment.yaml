@@ -157,6 +157,12 @@ spec:
         # 28/28; credits at gate+24h 56M -> 152M.
         - name: ST_POLICY_LAND_GRAB
           value: "on"
+        # Reserve the book's next cargo hull (the light hauler), not the shuttle,
+        # so the gate arm stops draining the treasury below it (spacetraders-erlang
+        # #301). A/B n=28 default export row: CY17 gate h35 -> h23, credits +321%;
+        # GS46 -0.4 h (FAB-capped world). Needs the #301 image.
+        - name: ST_POLICY_BOOK_RESERVE
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
