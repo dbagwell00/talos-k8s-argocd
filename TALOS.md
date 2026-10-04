@@ -97,6 +97,13 @@ talosctl bootstrap --nodes 192.168.4.20
 talosctl kubeconfig
 ```
 
+## Proxmox host health
+
+Outside Talos entirely, each Proxmox host runs the `homelab-health` systemd timer from
+[`scripts/proxmox-health/`](scripts/proxmox-health/README.md). It exports Samba/CTDB/CephFS/
+Ceph health as node-exporter textfile metrics, installed by
+`scripts/proxmox-health/install.sh`.
+
 ## What is **not** in this repo (and why)
 
 These are gitignored — they hold secrets or are per-environment, and this repo is public:

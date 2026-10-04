@@ -38,6 +38,10 @@ clustermesh/Hubble trust certificates), so it lives in standalone manifests appl
 rather than via the ApplicationSet — [`cilium-apps.yaml`](cilium-apps.yaml) for `talos-cilium`
 and [`cilium-mesh-apps.yaml`](cilium-mesh-apps.yaml) for `talos-mesh`.
 
+Every generated Application auto-syncs with prune + selfHeal, **except `spacetraders` and
+`spacetraders-erl`**: either trading agent must be stoppable with one
+`kubectl scale --replicas=0`, without selfHeal putting it back.
+
 The two clusters are **clustermesh-joined** (cluster id 1 ↔ 2, KVStoreMesh). Both value files
 declare clustermesh explicitly so a Helm upgrade can never prune the apiserver "embassy"; the
 hand-established trust secrets (`cilium-ca`, `cilium-clustermesh`, `clustermesh-apiserver-*-cert`)
@@ -66,16 +70,26 @@ are protected via `ignoreDifferences` + `RespectIgnoreDifferences` and are never
 | apps | spacetraders-pg | cilium | PostgreSQL 16 (CNPG, 1 instance, 20Gi RBD), LAN-exposed @ `192.168.4.140:5432` · Vault `secret/spacetraders/pg` |
 | apps | spacetraders-redis | cilium | Redis 7 standalone (Bitnami, 4Gi RBD), LAN-exposed @ `192.168.4.141:6379` · Vault `secret/spacetraders/redis` |
 | apps | spacetraders | cilium | Hub (planner + worker pool + Quart dashboard) from `registry.dlb.im/spacetraders:latest` · dashboard @ `192.168.4.142` · Vault `secret/spacetraders/agent` |
-| apps | spacetraders-erl | cilium | Erlang/OTP agent (`BBPUGZINSPACE`) from `registry.dlb.im/spacetraders-erlang:latest` · own PSA-privileged ns · egress via multus → vpn-gateway · dashboard @ `192.168.4.144` · control API ClusterIP `:5173` · Vault `secret/spacetraders/agent-erl` |
+| apps | spacetraders-erl | cilium | Erlang/OTP agent (callsign changes each weekly reset) from `registry.dlb.im/spacetraders-erlang:latest` · own PSA-privileged ns · egress via multus → vpn-gateway · dashboard @ `192.168.4.144` · control API ClusterIP `:5173` · Vault `secret/spacetraders/agent-erl` |
 | apps | vpn-gateway | cilium | gluetun (NordVPN/WireGuard) · Vault `secret/nordvpn` |
 | apps | media | cilium | *arr stack + qBittorrent, VPN egress via multus |
 | apps | bitwarden | mesh | Self-hosted Bitwarden (Helm self-host 1.0.4 + MSSQL) · Vault `secret/bitwarden` · standalone `bitwarden-apps.yaml` |
 | apps | filebrowser | cilium | nginx SMB file browser |
+| apps | hermes | cilium | [Hermes Agent](k8s/apps/hermes/README.md) on Telegram, model = local Qwen (vLLM). Read-only `st-readonly` gateway to the SpaceTraders agents, Loki and Prometheus; scheduled homelab watch · Vault `secret/hermes/agent` |
 | monitoring | loki | cilium | Log store (Loki, single-binary) |
 | monitoring | promtail | cilium | Log shipper + UniFi syslog receiver |
 | monitoring | grafana-dashboards | cilium | UniFi + Windows-exporter dashboard ConfigMaps |
 | monitoring | logging-services | cilium | External LoadBalancer Services (Loki / syslog) |
 | monitoring | kube-prometheus-stack | both | Prometheus/Grafana/Alertmanager · Vault `secret/grafana` + `secret/alertmanager` (mesh remote-writes to cilium) |
+
+## Host monitoring
+
+The Proxmox hosts run a small textfile collector,
+[`scripts/proxmox-health`](scripts/proxmox-health/README.md), that publishes
+Samba/CTDB/CephFS/Ceph health through their existing node-exporters: recovery rate and
+Generation, public-IP vs smbd-listener mismatches, CephFS readability, core-dump rate, and
+Ceph health checks. The Hermes agent reads these (plus the SpaceTraders pod metrics) every
+15 minutes and messages on Telegram when something changes, with a full digest at 8am.
 
 ## Secrets
 
