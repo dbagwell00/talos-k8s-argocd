@@ -54,6 +54,14 @@ spec:
           install -d -o 10000 -g 10000 -m 0755 /opt/data/skills/spacetraders "$d" "$d/scripts"
           install -o 10000 -g 10000 -m 0644 /skill/SKILL.md "$d/SKILL.md"
           install -o 10000 -g 10000 -m 0755 /skill/st.py "$d/scripts/st.py"
+          h=/opt/data/skills/homelab/homelab-health
+          install -d -o 10000 -g 10000 -m 0755 /opt/data/skills/homelab "$h" "$h/scripts" /opt/data/scripts
+          install -o 10000 -g 10000 -m 0644 /skill-homelab/SKILL.md "$h/SKILL.md"
+          install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py "$h/scripts/health.py"
+          # Script-only cron jobs must live in $HERMES_HOME/scripts and take
+          # no arguments; health.py picks its mode from its file name.
+          install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py /opt/data/scripts/health_check.py
+          install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py /opt/data/scripts/health_report.py
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -68,11 +76,19 @@ spec:
         - name: skill-spacetraders
           mountPath: /skill
           readOnly: true
+        - name: skill-homelab
+          mountPath: /skill-homelab
+          readOnly: true
       containers:
       - name: hermes
         image: nousresearch/hermes-agent:v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7
         # Image ENTRYPOINT is s6-overlay's /init; leave it in place.
         args: ["gateway", "run"]
+        env:
+        # Cron schedules ("every day at 8am") and the scripts' timestamps
+        # follow this; the image defaults to UTC.
+        - name: TZ
+          value: America/Los_Angeles
         envFrom:
         - secretRef:
             name: hermes-agent
@@ -105,3 +121,6 @@ spec:
       - name: skill-spacetraders
         configMap:
           name: hermes-skill-spacetraders
+      - name: skill-homelab
+        configMap:
+          name: hermes-skill-homelab

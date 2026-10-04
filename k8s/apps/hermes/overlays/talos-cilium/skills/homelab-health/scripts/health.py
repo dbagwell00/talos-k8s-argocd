@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph and the SpaceTraders pods.
+
+Reads only the st-readonly gateway's fixed Prometheus queries plus the two
+agents' health views; holds no credentials and changes nothing.
+
+  health.py report   full status, always prints (morning digest, "how's the lab")
+  health.py check    only prints on change: a new problem, a resolved one, or
+                     a reminder for one still open (CRIT every 6h, WARN daily).
+                     Empty output = nothing to say; Hermes cron then stays quiet.
+
+Installed twice: in the homelab-health skill, and in $HERMES_HOME/scripts as
+health_check.py / health_report.py for script-only cron jobs, which can't
+pass arguments -- so the file name picks the mode.
+"""
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime
+
+BASE = os.environ.get("ST_BASE", "http://st-readonly.hermes.svc.cluster.local:8080")
+HOME = os.environ.get("HERMES_HOME", "/opt/data")
+STATE = os.path.join(HOME, "cron", "homelab-health-state.json")
+HOSTS = {"192.168.1.230": "prox01", "192.168.1.232": "prox02",
+         "192.168.1.234": "prox03", "192.168.1.236": "prox04"}
+REMIND = {"CRIT": 6 * 3600, "WARN": 24 * 3600}
+ICON = {"CRIT": "🔴", "WARN": "🟡", "OK": "🟢", "INFO": "ℹ️"}
+
+# Fixes from past incidents, shown next to the matching problem.
+HINT = {
+    "stale_bind": "smbd bound before a CTDB takeover; `systemctl restart smbd` on that host, then restart pods on SMB PVCs",
+    "cephfs": "evicted CephFS mount: stop ctdb, `umount -l /mnt/cephfs && mount -a`, check `ls /mnt/cephfs/.ctdb/`, start ctdb, smbd, winbind",
+    "recovery_loop": "CTDB recovery loop; usually a host that can't read the recovery lock on CephFS",
+    "cores": "smbd panic storm, often ctdbd unreachable after a switch flap (03:20-04:00 = UniFi firmware upgrade); watch / on that host",
+    "nmbd": "NetBIOS only, SMB unaffected; `systemctl start nmbd` on that host",
+}
+
+
+def host(inst):
+    return HOSTS.get(inst.split(":")[0], inst)
+
+
+def get(path, timeout=20):
+    with urllib.request.urlopen(BASE + path, timeout=timeout) as r:
+        return json.load(r)
+
+
+def prom(name):
+    d = get("/prom/" + name)
+    return [(r["metric"], float(r["value"][1])) for r in d["data"]["result"]]
+
+
+def evaluate():
+    """Returns (problems, facts): problems = {key: (sev, text)}; facts = [str]."""
+    P, F = {}, []
+
+    def bad(key, sev, text, hint=None):
+        P[key] = (sev, text + (f" -> {HINT[hint]}" if hint else ""))
+
+    try:
+        get("/healthz", timeout=5)
+    except Exception as e:
+        bad("gateway", "CRIT", f"st-readonly gateway unreachable ({e}); nothing else could be checked")
+        return P, F
+
+    # ---- Proxmox hosts --------------------------------------------------------
+    try:
+        up = {host(m["instance"]): v for m, v in prom("host_up")}
+        hl = prom("homelab")
+    except Exception as e:
+        bad("prometheus", "CRIT", f"Prometheus query failed ({e})")
+        return P, F
+    for h in HOSTS.values():
+        if up.get(h, 0) < 1:
+            bad(f"down:{h}", "CRIT", f"{h} node-exporter not answering (host down or off the network?)")
+
+    by = {}
+    for m, v in hl:
+        by.setdefault(m["__name__"], []).append((m, v))
+
+    def per_host(name):
+        return {host(m["instance"]): v for m, v in by.get(name, [])}
+
+    now = time.time()
+    for h, ts in per_host("homelab_health_last_run_seconds").items():
+        if now - ts > 300:
+            bad(f"stale:{h}", "WARN", f"{h} health collector last ran {int((now - ts) / 60)} min ago (homelab-health.timer)")
+
+    for m, v in by.get("homelab_unit_active", []):
+        if v < 1:
+            u, h = m["unit"], host(m["instance"])
+            sev = "WARN" if u == "nmbd" else "CRIT"
+            bad(f"unit:{h}:{u}", sev, f"{h}: {u} is not running", "nmbd" if u == "nmbd" else None)
+
+    for h, v in per_host("homelab_ctdb_status_ok").items():
+        if v < 1:
+            bad(f"ctdb:{h}", "CRIT", f"{h}: `ctdb status` not answering")
+    for h, v in per_host("homelab_ctdb_recovery_mode").items():
+        if v >= 1:
+            bad(f"recmode:{h}", "WARN", f"{h}: CTDB in recovery mode")
+    nodes = {}
+    for m, v in by.get("homelab_ctdb_nodes", []):
+        nodes.setdefault(host(m["instance"]), {})[m["state"]] = v
+    for h, n in nodes.items():
+        if n.get("ok", 0) < n.get("total", 0):
+            bad(f"ctdbnodes:{h}", "CRIT", f"{h} sees {int(n.get('ok', 0))}/{int(n.get('total', 0))} CTDB nodes OK")
+    gens = set(per_host("homelab_ctdb_generation").values())
+    if len(gens) > 1:
+        bad("gen_split", "CRIT", f"CTDB nodes disagree on Generation ({len(gens)} values): split-brain")
+    try:
+        loop = max((v for _, v in prom("ctdb_recoveries_max_15m")), default=0)
+        if loop > 3:
+            bad("recovery_loop", "CRIT", f"CTDB started {int(loop)} recoveries within 5 min", "recovery_loop")
+        changed = max((v for _, v in prom("ctdb_gen_changes_1h")), default=0)
+        if changed > 0:
+            bad("recovered", "WARN", f"CTDB ran {int(changed)} recovery(ies) in the last hour (Generation changed)")
+    except Exception:
+        pass
+
+    held = {}
+    listening = {}
+    for m, v in by.get("homelab_ctdb_public_ip_held", []):
+        if v >= 1:
+            held.setdefault(m["ip"], []).append(host(m["instance"]))
+    for m, v in by.get("homelab_smbd_listening", []):
+        listening[(host(m["instance"]), m["ip"])] = v
+    all_ips = {m["ip"] for m, _ in by.get("homelab_ctdb_public_ip_held", [])}
+    for ip in sorted(all_ips):
+        owners = held.get(ip, [])
+        if not owners:
+            bad(f"ip_unheld:{ip}", "CRIT", f"CTDB public IP {ip} is held by no host")
+        elif len(owners) > 1:
+            bad(f"ip_dup:{ip}", "CRIT", f"CTDB public IP {ip} held by {', '.join(owners)} at once")
+        for h in owners:
+            if listening.get((h, ip), 0) < 1:
+                bad(f"stale_bind:{h}:{ip}", "CRIT", f"{h} holds {ip} but smbd isn't listening on it", "stale_bind")
+
+    for h, v in per_host("homelab_cephfs_mounted").items():
+        if v < 1:
+            bad(f"cephfs_mount:{h}", "CRIT", f"{h}: /mnt/cephfs not mounted", "cephfs")
+    for h, v in per_host("homelab_cephfs_readable").items():
+        if v < 1 and per_host("homelab_cephfs_mounted").get(h, 0) >= 1:
+            bad(f"cephfs:{h}", "CRIT", f"{h}: /mnt/cephfs mounted but unreadable (evicted?)", "cephfs")
+
+    for h, v in per_host("homelab_samba_core_files_5m").items():
+        if v >= 50:
+            bad(f"cores:{h}", "CRIT", f"{h}: {int(v)} Samba cores in 5 min", "cores")
+        elif v > 0:
+            bad(f"cores:{h}", "WARN", f"{h}: {int(v)} Samba core(s) in the last 5 min", "cores")
+    for h, v in per_host("homelab_samba_core_bytes").items():
+        if v > 5e9:
+            bad(f"corebytes:{h}", "WARN", f"{h}: /var/log/samba/cores holds {v / 1e9:.1f} GB")
+
+    status = max(per_host("homelab_ceph_health_status").values(), default=None)
+    checks = sorted({(m["check"], m["severity"]) for m, _ in by.get("homelab_ceph_health_check", [])})
+    if status is None:
+        bad("ceph_cli", "WARN", "no host could run `ceph health`")
+    elif status >= 1:
+        sev = "CRIT" if status >= 2 else "WARN"
+        names = ", ".join(c for c, _ in checks) or "no detail"
+        bad("ceph", sev, f"Ceph {'HEALTH_ERR' if status >= 2 else 'HEALTH_WARN'}: {names}")
+
+    try:
+        for m, v in prom("rootfs_free"):
+            h = host(m["instance"])
+            if v < 0.05:
+                bad(f"rootfs:{h}", "CRIT", f"{h}: / is {100 * (1 - v):.0f}% full")
+            elif v < 0.15:
+                bad(f"rootfs:{h}", "WARN", f"{h}: / is {100 * (1 - v):.0f}% full")
+            F.append(f"{h} / {100 * (1 - v):.0f}% used")
+    except Exception:
+        pass
+
+    F.append(f"CTDB generation {', '.join(str(int(g)) for g in gens) or '?'}; "
+             f"{sum(1 for n in nodes.values() if n.get('ok') == n.get('total'))}/{len(nodes)} hosts see all nodes OK")
+    F.append("Ceph " + ({0: "HEALTH_OK", 1: "HEALTH_WARN", 2: "HEALTH_ERR"}.get(int(status), "?") if status is not None else "unknown"))
+    cores = per_host("homelab_samba_core_bytes")
+    if cores:
+        F.append("Samba cores: " + ", ".join(f"{h} {v / 1e6:.0f} MB" for h, v in sorted(cores.items())))
+
+    # ---- SpaceTraders pods ------------------------------------------------------
+    spec = {}
+    try:
+        spec = {m["deployment"]: v for m, v in prom("st_deploy_spec")}
+        avail = {m["deployment"]: v for m, v in prom("st_deploy_avail")}
+        for d in ("spacetraders", "spacetraders-erl"):
+            s, a = spec.get(d), avail.get(d, 0)
+            if s is None:
+                bad(f"st:{d}", "CRIT", f"deployment {d} not found")
+            elif s == 0:
+                F.append(f"{d}: scaled to 0 (deliberate?)")
+            elif a < s:
+                bad(f"st:{d}", "CRIT", f"{d}: {int(a)}/{int(s)} replicas available")
+            else:
+                F.append(f"{d}: {int(a)}/{int(s)} up")
+        ready = {m["pod"]: v for m, v in prom("st_pods_ready")}
+        for want, label in (("spacetraders-pg-", "Postgres"), ("spacetraders-redis-master-", "Redis")):
+            pods = {p: v for p, v in ready.items() if p.startswith(want)}
+            if not pods:
+                bad(f"st:{label}", "CRIT", f"{label}: no pod found")
+            elif not any(v >= 1 for v in pods.values()):
+                bad(f"st:{label}", "CRIT", f"{label}: not ready ({', '.join(pods)})")
+            else:
+                F.append(f"{label}: ready")
+        for m, v in prom("st_restarts_1h"):
+            bad(f"restart:{m['pod']}:{m.get('container', '')}", "WARN",
+                f"{m['pod']} ({m.get('container', '?')}) restarted {v:.0f}x in the last hour")
+        for m, v in prom("st_pvc_used"):
+            if v > 0.85:
+                bad(f"pvc:{m['persistentvolumeclaim']}", "WARN" if v < 0.95 else "CRIT",
+                    f"PVC {m['persistentvolumeclaim']} {100 * v:.0f}% full")
+    except Exception as e:
+        bad("st_metrics", "WARN", f"SpaceTraders pod metrics unavailable ({e})")
+
+    for label, path in (("Python agent API", "/py/healthz"), ("Erlang agent API", "/erl/live/clock")):
+        if spec.get("spacetraders" if label.startswith("Python") else "spacetraders-erl", 1) == 0:
+            continue
+        try:
+            get(path, timeout=10)
+        except Exception as e:
+            bad(f"api:{label}", "WARN", f"{label} not answering ({e})")
+    return P, F
+
+
+def stamp():
+    return datetime.now().astimezone().strftime("%a %-I:%M %p %Z")
+
+
+def report():
+    P, F = evaluate()
+    worst = "CRIT" if any(s == "CRIT" for s, _ in P.values()) else "WARN" if P else "OK"
+    print(f"{ICON[worst]} Homelab health, {stamp()}")
+    for sev in ("CRIT", "WARN"):
+        for k, (s, t) in sorted(P.items()):
+            if s == sev:
+                print(f"{ICON[s]} {t}")
+    if not P:
+        print("No problems found.")
+    for f in F:
+        print(f"  · {f}")
+
+
+def check():
+    P, _ = evaluate()
+    try:
+        with open(STATE) as fh:
+            state = json.load(fh)
+    except Exception:
+        state = {}
+    now = time.time()
+    out_new, out_still, out_done = [], [], []
+    for k, (sev, text) in P.items():
+        st = state.get(k)
+        if st is None:
+            out_new.append(f"{ICON[sev]} NEW: {text}")
+            state[k] = {"first": now, "sent": now, "sev": sev, "text": text}
+        elif sev == "CRIT" and st.get("sev") != "CRIT":
+            out_new.append(f"{ICON[sev]} WORSE: {text}")
+            st.update(sent=now, sev=sev, text=text)
+        elif now - st.get("sent", 0) >= REMIND[sev]:
+            since = datetime.fromtimestamp(st["first"]).astimezone().strftime("%a %-I:%M %p")
+            out_still.append(f"{ICON[sev]} still, since {since}: {text}")
+            st.update(sent=now, sev=sev)
+    for k in [k for k in state if k not in P]:
+        out_done.append(f"✅ resolved: {state[k].get('text', k).split(' -> ')[0]}")
+        del state[k]
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    tmp = STATE + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(state, fh)
+    os.replace(tmp, STATE)
+    if out_new or out_still or out_done:
+        print(f"Homelab watch, {stamp()}")
+        print("\n".join(out_new + out_still + out_done))
+
+
+if __name__ == "__main__":
+    base = os.path.basename(sys.argv[0])
+    mode = sys.argv[1] if len(sys.argv) > 1 else ("check" if "check" in base else "report")
+    {"check": check, "report": report}[mode]()
