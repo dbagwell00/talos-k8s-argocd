@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph and the SpaceTraders pods.
+"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph, Blue Iris recording, and the
+SpaceTraders pods.
 
 Reads only the st-readonly gateway's fixed Prometheus queries plus the two
 agents' health views; holds no credentials and changes nothing.
@@ -36,7 +37,11 @@ HINT = {
     "recovery_loop": "CTDB recovery loop; usually a host that can't read the recovery lock on CephFS",
     "cores": "smbd panic storm, often ctdbd unreachable after a switch flap (03:20-04:00 = UniFi firmware upgrade); watch / on that host",
     "nmbd": "NetBIOS only, SMB unaffected; `systemctl start nmbd` on that host",
+    "camera": "check the camera's feed in the Blue Iris UI (http://192.168.1.44:8081); a dead camera, a network drop, or Blue Iris itself stopped",
+    "bi_rotation": "Blue Iris didn't move it to stored/; check Blue Iris clip storage settings, or move/delete the file by hand",
 }
+CAM_STALE = 300          # s without a write before a camera counts as not recording
+ALERT_QUIET = 12 * 3600  # s without any alert image
 
 
 def host(inst):
@@ -180,6 +185,47 @@ def evaluate():
     cores = per_host("homelab_samba_core_bytes")
     if cores:
         F.append("Samba cores: " + ", ".join(f"{h} {v / 1e6:.0f} MB" for h, v in sorted(cores.items())))
+
+    # ---- Ceph capacity --------------------------------------------------------
+    pools = {}
+    for m, v in by.get("homelab_ceph_pool_used_ratio", []):
+        pools[m["pool"]] = max(pools.get(m["pool"], 0), v)
+    for pool, v in pools.items():
+        if v > 0.85:
+            bad(f"pool:{pool}", "CRIT", f"Ceph pool {pool} {100 * v:.0f}% full")
+        elif v > 0.75:
+            bad(f"pool:{pool}", "WARN", f"Ceph pool {pool} {100 * v:.0f}% full")
+    avail = {m["pool"]: v for m, v in by.get("homelab_ceph_pool_max_avail_bytes", [])}
+    if "cephfs-data" in pools:
+        F.append(f"CephFS data {100 * pools['cephfs-data']:.0f}% used, "
+                 f"{avail.get('cephfs-data', 0) / 1e12:.0f} TB free")
+
+    # ---- Blue Iris (clips on CephFS) ---------------------------------------------
+    try:
+        ages = {m["camera"]: v for m, v in prom("bi_camera_age")}
+        rates = {m["camera"]: v for m, v in prom("bi_bitrate")}
+    except Exception as e:
+        ages, rates = {}, {}
+        bad("bi_metrics", "WARN", f"Blue Iris metrics unavailable ({e})")
+    if not ages and "bi_metrics" not in P:
+        bad("bi_none", "CRIT", "no Blue Iris recordings seen on CephFS at all", "camera")
+    stale = sorted(c for c, a in ages.items() if a > CAM_STALE)
+    for c in stale:
+        bad(f"cam:{c}", "CRIT", f"camera {c} stopped recording ({int(ages[c] / 60)} min since last write)", "camera")
+    if ages:
+        F.append(f"Blue Iris: {len(ages) - len(stale)}/{len(ages)} cameras recording"
+                 + (f" ({', '.join(f'{c} {8 * r / 1e6:.1f} Mb/s' for c, r in sorted(rates.items()))})" if rates else ""))
+    now_s = time.time()
+    last_alert = max((v for _, v in by.get("homelab_blueiris_alert_last_seconds", [])), default=None)
+    if last_alert is not None:
+        if last_alert == 0 or now_s - last_alert > ALERT_QUIET:
+            bad("bi_alerts", "WARN", "no Blue Iris alert images in 12h+ (AI/motion triggers may be broken)")
+        else:
+            F.append(f"Blue Iris last alert {int((now_s - last_alert) / 60)} min ago")
+    oldest = min((v for _, v in by.get("homelab_blueiris_new_oldest_seconds", []) if v > 0), default=None)
+    if oldest and now_s - oldest > 2 * 86400:
+        since = datetime.fromtimestamp(oldest).astimezone().strftime("%b %-d")
+        bad("bi_rotation", "WARN", f"a Blue Iris segment from {since} is still in new/", "bi_rotation")
 
     # ---- SpaceTraders pods ------------------------------------------------------
     spec = {}

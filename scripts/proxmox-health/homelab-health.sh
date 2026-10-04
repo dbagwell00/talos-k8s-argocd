@@ -17,6 +17,13 @@
 #                              but returns EACCES, killing the CTDB lock.
 #   samba cores                a panic storm wrote 41 GB of cores in 7 min.
 #   ceph health checks         SLOW_OPS etc. (the mgr prometheus module is off).
+#   ceph capacity              per-pool fill; Blue Iris alone stores ~86 TB on CephFS.
+#   blue iris recording        Blue Iris (VM 107) records every camera continuously
+#                              to CephFS in hourly .bvr segments. The open segment's
+#                              mtime advances while the camera streams, so its age
+#                              is "stopped streaming / not recording" with no BI
+#                              login. Also: alert JPEGs (AI/motion still firing) and
+#                              files stuck in new/ (rotation to stored/ broken).
 #
 # Read-only: it runs status commands and reads files, and changes nothing.
 set -u
@@ -95,6 +102,41 @@ if [ $rc -eq 0 ] && [ -n "$cj" ]; then
   help homelab_ceph_health_check "1 for each active Ceph health check (e.g. SLOW_OPS)."
   jq -r '.checks // {} | to_entries[] |
     "homelab_ceph_health_check{check=\"" + .key + "\",severity=\"" + .value.severity + "\"} 1"' <<<"$cj"
+fi
+
+if [ $rc -eq 0 ] && [ -n "$cj" ]; then
+  df=$(timeout -k 1 10 ceph df --format json 2>/dev/null)
+  if [ -n "$df" ]; then
+    help homelab_ceph_raw_used_ratio "Fraction of raw cluster capacity used."
+    jq -r '"homelab_ceph_raw_used_ratio " + (.stats.total_used_raw_ratio|tostring)' <<<"$df"
+    help homelab_ceph_pool_used_ratio "Pool percent_used as a fraction."
+    help homelab_ceph_pool_max_avail_bytes "Bytes the pool can still take at its replication."
+    help homelab_ceph_pool_stored_bytes "Bytes stored in the pool (before replication)."
+    jq -r '.pools[] |
+      "homelab_ceph_pool_used_ratio{pool=\"" + .name + "\"} " + (.stats.percent_used|tostring),
+      "homelab_ceph_pool_max_avail_bytes{pool=\"" + .name + "\"} " + (.stats.max_avail|tostring),
+      "homelab_ceph_pool_stored_bytes{pool=\"" + .name + "\"} " + (.stats.stored|tostring)' <<<"$df"
+  fi
+fi
+
+# --- Blue Iris recordings on CephFS -------------------------------------------
+bi=/mnt/cephfs/blueiris
+if timeout -k 1 $T test -d "$bi/new"; then
+  listing=$(timeout -k 1 15 find "$bi/new" -maxdepth 1 -type f -name '*.bvr' -printf '%T@ %s %f\n' 2>/dev/null)
+  help homelab_blueiris_camera_last_write_seconds "Unix mtime of the camera's newest .bvr segment in new/."
+  help homelab_blueiris_camera_segment_bytes "Size of the camera's newest .bvr segment (grows while recording)."
+  # newest segment per camera: file name is <CAMERA>.<YYYYMMDD_HHMMSSZ>.bvr
+  awk '{ split($3, a, "."); cam = a[1];
+         if (!(cam in t) || $1 > t[cam]) { t[cam] = $1; sz[cam] = $2 } }
+       END { for (c in t) {
+         printf "homelab_blueiris_camera_last_write_seconds{camera=\"%s\"} %d\n", c, t[c];
+         printf "homelab_blueiris_camera_segment_bytes{camera=\"%s\"} %d\n", c, sz[c] } }' <<<"$listing"
+  help homelab_blueiris_new_files "Segments in new/ (normally ~1-2 per camera)."
+  m "homelab_blueiris_new_files $(grep -c . <<<"$listing")"
+  help homelab_blueiris_new_oldest_seconds "Unix mtime of the oldest segment in new/; old = rotation to stored/ stuck."
+  m "homelab_blueiris_new_oldest_seconds $(awk 'NR==1||$1<min{min=$1} END{printf "%d", min+0}' <<<"$listing")"
+  help homelab_blueiris_alert_last_seconds "Unix mtime of the newest alert image (AI/motion triggers firing)."
+  m "homelab_blueiris_alert_last_seconds $(timeout -k 1 15 find "$bi/alerts" -maxdepth 1 -type f -mmin -1440 -printf '%T@\n' 2>/dev/null | sort -n | tail -1 | cut -d. -f1 | grep . || echo 0)"
 fi
 
 help homelab_health_last_run_seconds "Unix time this collector last finished."
