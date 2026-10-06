@@ -217,7 +217,12 @@ spec:
           limits:
             # 1 -> 2 (2026-09-26): 997m of 1000m at 188 ships, ticks 6-8 s
             # against a 5 s interval.
-            cpu: "2"
+            # 2 -> 4 (2026-10-06): pinned at 2002m, ticks 17-29 s against 5 s,
+            # nearly all of it `propose_expansion`; /readyz timed out for 6h46m
+            # (1,839 failures) so the Service had no endpoint. Headroom against
+            # CFS throttling only -- expansion runs serially in the planner, so
+            # its growth with known systems is the real fix.
+            cpu: "4"
             memory: 2Gi
         volumeMounts:
         - name: data
