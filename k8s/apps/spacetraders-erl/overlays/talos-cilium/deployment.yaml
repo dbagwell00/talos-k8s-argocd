@@ -163,6 +163,12 @@ spec:
         # GS46 -0.4 h (FAB-capped world). Needs the #301 image.
         - name: ST_POLICY_BOOK_RESERVE
           value: "on"
+        # Buy traders through the post-gate charting surge instead of
+        # backfilling after it: the first traders into a system get its fat
+        # lanes (spacetraders-erlang #304). Live 2026-10-06 the defer held 4
+        # haulers on 15.4M. Fleet cap still bounds the count. Needs the #304 image.
+        - name: ST_POLICY_SURGE_TRADERS
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
