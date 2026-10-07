@@ -169,6 +169,12 @@ spec:
         # haulers on 15.4M. Fleet cap still bounds the count. Needs the #304 image.
         - name: ST_POLICY_SURGE_TRADERS
           value: "on"
+        # Drop calls for information already held: the pre-jump gate read,
+        # the post-sell market read, the dock around a skipped top-up -- ~17% of
+        # live calls (spacetraders-erlang #305, SPEC 4.2a). A/B n=12 from the
+        # live 800-hull fleet: net worth +6.8% (CI +6.0..+7.7%). Needs the #305 image.
+        - name: ST_POLICY_API_LEAN
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
