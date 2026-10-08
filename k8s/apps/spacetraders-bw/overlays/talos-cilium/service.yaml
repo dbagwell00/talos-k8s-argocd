@@ -15,14 +15,16 @@ spec:
     protocol: TCP
 
 ---
-# Read-only dashboard (GET-only listener on 8080), next to GOBBLICIDE's .144.
+# Read-only dashboard (GET-only listener on 8080) on .142, the address
+# TURKEYBOI1's dashboard had (freed 2026-10-08 when spacetraders-sim was
+# retired). GOBBLICIDE's is .144.
 apiVersion: v1
 kind: Service
 metadata:
   name: spacetraders-bw-web
   namespace: spacetraders-bw
   annotations:
-    io.cilium/lb-ipam-ips: "192.168.4.146"
+    io.cilium/lb-ipam-ips: "192.168.4.142"
 spec:
   type: LoadBalancer
   selector:
