@@ -56,12 +56,12 @@ spec:
         jsonPointers:
         - /metadata/labels/kubernetes.io~1metadata.name
       syncPolicy:
-        # spacetraders / spacetraders-erl: autosync intentionally disabled so
+        # spacetraders / spacetraders-erl / spacetraders-bw: autosync intentionally disabled so
         # either agent's deployment can be manually scaled to 0 without
         # selfHeal reverting it to git's replicas: 1. Being able to stop a
         # live trading agent in one command, without a git round-trip, is the
         # point -- a misbehaving agent burns the API budget while you wait.
-        {{- if not (has (index .path.segments 2) (list "spacetraders" "spacetraders-erl")) }}
+        {{- if not (has (index .path.segments 2) (list "spacetraders" "spacetraders-erl" "spacetraders-bw")) }}
         automated:
           prune: true
           selfHeal: true
