@@ -179,6 +179,11 @@ spec:
         # live 800-hull fleet: net worth +6.8% (CI +6.0..+7.7%). Needs the #305 image.
         - name: ST_POLICY_API_LEAN
           value: "on"
+        # Remember a hauler's "no route" until its system's markets change,
+        # it moves, or 60 s pass (spacetraders-erlang #306, SPEC 3.3.3).
+        # propose_trade was ~1.4 s of a ~2 s tick. Needs the #306 image.
+        - name: ST_POLICY_NO_ROUTE_CACHE
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
