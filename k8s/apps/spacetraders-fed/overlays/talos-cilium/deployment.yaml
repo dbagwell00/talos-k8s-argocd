@@ -1,0 +1,71 @@
+# st_fed serves what GOBBLICIDE and BLOODWATTLE publish to spacetraders_alliance
+# (where our haulers work and are heading, where our probes stand) to whater,
+# and stores whater's GOHERE/DONTGO advice. Same image as the agents.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spacetraders-fed
+  namespace: spacetraders-fed
+  labels:
+    app: spacetraders-fed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spacetraders-fed
+  template:
+    metadata:
+      labels:
+        app: spacetraders-fed
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: fed
+        image: registry.dlb.im/spacetraders-erlang:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8082
+          name: federation
+        env:
+        - name: ST_ROLE
+          value: federation
+        - name: ST_FED_PORT
+          value: "8082"
+        - name: FEDERATION_USERS
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-federation
+              key: FEDERATION_USERS
+        - name: PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-fed-pg
+              key: username
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-fed-pg
+              key: password
+        - name: ST_ALLY_PG_URL
+          value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_alliance"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 3
+          periodSeconds: 10

@@ -1,0 +1,10 @@
+# The federation API (spacetraders-erlang st_fed): the one internet-facing
+# piece of the SpaceTraders stack, so it gets its own namespace and nothing in
+# it can reach a fleet -- the pod runs the agent image with ST_ROLE=federation,
+# which starts the HTTP server and nothing else.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spacetraders-fed
+  labels:
+    kubernetes.io/metadata.name: spacetraders-fed
