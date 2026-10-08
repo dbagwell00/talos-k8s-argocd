@@ -1,0 +1,13 @@
+# st_persist snapshots, same reasoning as spacetraders-erl/pvc.yaml.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spacetraders-bw-data
+  namespace: spacetraders-bw
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ceph-rbd
+  resources:
+    requests:
+      storage: 2Gi

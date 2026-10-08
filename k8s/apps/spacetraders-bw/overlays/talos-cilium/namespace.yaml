@@ -1,0 +1,10 @@
+# BLOODWATTLE: the second Erlang agent (spacetraders-erlang code), replacing
+# TURKEYBOI1 in the SHADOW faction. Unlike spacetraders-erl it has no VPN
+# init container, so it needs no NET_ADMIN and Talos's default `baseline`
+# PodSecurity is enough.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spacetraders-bw
+  labels:
+    kubernetes.io/metadata.name: spacetraders-bw

@@ -6,7 +6,11 @@ metadata:
   labels:
     app: spacetraders
 spec:
-  replicas: 1
+  # 0 since 2026-10-08: TURKEYBOI1 is replaced by BLOODWATTLE
+  # (../../spacetraders-bw), which takes over this pod's egress IP. Both
+  # running at once would split one per-IP rate limit. Rollback: set this
+  # back to 1 AND scale spacetraders-bw to 0 in the same change.
+  replicas: 0
   # Single-writer: planner assumes one instance. Recreate avoids two pods
   # racing on the API + DB during rollouts.
   strategy:
