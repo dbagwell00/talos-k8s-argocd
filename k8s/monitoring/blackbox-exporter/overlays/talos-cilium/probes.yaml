@@ -159,4 +159,4 @@ spec:
       labels:
         service: bitwarden
       static:
-      - https://bw.dlb.im/alive
+      - https://bw.dlb.im/api/alive
