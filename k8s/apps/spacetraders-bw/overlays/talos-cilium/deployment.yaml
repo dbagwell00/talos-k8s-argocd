@@ -72,6 +72,13 @@ spec:
               key: password
         - name: ST_PG_URL
           value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_bw"
+        # The alliance (spacetraders-erlang st_ally): GOBBLICIDE and BLOODWATTLE
+        # publish their HQs and the systems their haulers work, and neither
+        # sends a hauler or a charting probe into the other's side (nearest HQ
+        # wins, claims of worked systems beat that). Shared by both agents;
+        # unset turns the rule off. /live/ally shows what it blocked.
+        - name: ST_ALLY_PG_URL
+          value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_alliance"
         - name: ST_DATA_DIR
           value: /data
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
