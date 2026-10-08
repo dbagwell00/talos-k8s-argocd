@@ -140,8 +140,12 @@ spec:
           value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_erl"
         - name: ST_DATA_DIR
           value: /data
+        # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
+        # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
+        # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
+        # real cap on calls; slots only decide who may queue for one.
         - name: ST_WORKER_POOL_SIZE
-          value: "32"
+          value: "128"
         - name: ST_TICK_MS
           value: "5000"
         # whater's fleet cap: no trade hull past the sum of per-system
@@ -174,6 +178,11 @@ spec:
         # live calls (spacetraders-erlang #305, SPEC 4.2a). A/B n=12 from the
         # live 800-hull fleet: net worth +6.8% (CI +6.0..+7.7%). Needs the #305 image.
         - name: ST_POLICY_API_LEAN
+          value: "on"
+        # Remember a hauler's "no route" until its system's markets change,
+        # it moves, or 60 s pass (spacetraders-erlang #306, SPEC 3.3.3).
+        # propose_trade was ~1.4 s of a ~2 s tick. Needs the #306 image.
+        - name: ST_POLICY_NO_ROUTE_CACHE
           value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
