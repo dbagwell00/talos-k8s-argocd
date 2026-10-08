@@ -1,30 +1,6 @@
-# Dashboard exposed on a Cilium L2 LB IP (HTTP only for now; no cert-manager
-# on talos-cilium yet — wrap with TLS later if/when needed).
-#
-# The URL is unchanged but the pod behind it is not: the dashboard moved OUT of
-# the agent and into the spacetraders-sim image, so the UI can be redeployed
-# without restarting the live trading agent. Hence `app: spacetraders-sim` and
-# port 8081 (the sim lab keeps 8080 on .143). The agent still listens on 5173,
-# but only for its control API, which the dashboard calls from inside the
-# cluster — it is deliberately not exposed on a LoadBalancer.
-apiVersion: v1
-kind: Service
-metadata:
-  name: spacetraders-web
-  namespace: spacetraders
-  annotations:
-    io.cilium/lb-ipam-ips: "192.168.4.142"
-spec:
-  type: LoadBalancer
-  selector:
-    app: spacetraders-sim
-  ports:
-  - name: web
-    port: 80
-    targetPort: 8081
-    protocol: TCP
-
----
+# The dashboard Service (spacetraders-web, 192.168.4.142) was removed on
+# 2026-10-08 with the spacetraders-sim app that served it; .142 now belongs to
+# BLOODWATTLE's dashboard (../../spacetraders-bw/).
 # The agent's control API, cluster-internal only.
 #
 # The agent never had a Service of its own — it was reachable solely through
