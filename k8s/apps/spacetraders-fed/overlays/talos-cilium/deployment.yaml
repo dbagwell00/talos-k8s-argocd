@@ -1,6 +1,7 @@
 # st_fed serves what GOBBLICIDE and BLOODWATTLE publish to spacetraders_alliance
 # (where our haulers work and are heading, where our probes stand) to whater,
-# and stores whater's GOHERE/DONTGO advice. Same image as the agents.
+# stores whater's GOHERE/DONTGO advice, and serves our own dashboards (overview
+# at /, each agent at /<AGENT>/) behind UI_USERS. Same image as the agents.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,6 +40,16 @@ spec:
             secretKeyRef:
               name: spacetraders-federation
               key: FEDERATION_USERS
+        # Our own dashboards, behind their own login (spacetraders-erlang #316):
+        # /<AGENT>/... is proxied GET-only to each agent's read-only listener.
+        - name: UI_USERS
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-federation
+              key: UI_USERS
+              optional: true
+        - name: ST_FED_AGENTS
+          value: "GOBBLICIDE=http://spacetraders-erl-web.spacetraders-erl.svc,BLOODWATTLE=http://spacetraders-bw-web.spacetraders-bw.svc"
         - name: PG_USER
           valueFrom:
             secretKeyRef:
