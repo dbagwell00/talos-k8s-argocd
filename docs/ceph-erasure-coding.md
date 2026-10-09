@@ -72,7 +72,7 @@ so the other cameras moved over as their segments ended.
 Blue Iris migrates itself: new segments land on EC, and the old ones age out of
 `stored/` (about 13 weeks of retention, so by early January 2027).
 
-## Step 2: watch for a few days
+## Step 2: watch (done)
 
 - **Recording.** Hermes's homelab watch alerts if any camera stops writing for 5 min.
   `homelab_blueiris_camera_last_write_seconds` and the per-camera bitrate are in Prometheus.
@@ -88,7 +88,27 @@ Blue Iris migrates itself: new segments land on EC, and the old ones age out of
 - **Growth.** `ceph df` should show `cephfs-ec` growing by about 3 TiB/week and `cephfs-data`
   shrinking as old footage ages out.
 
-## Step 3: `media/` (not done yet)
+## Done: step 3, `media/` (2026-10-04 → 2026-10-09)
+
+The layout was set on `/mnt/cephfs/media` on 2026-10-04. `rewrite-to-pool.sh --bwlimit 150000`
+then ran from 2026-10-04 17:29 to 2026-10-09 12:51 PDT (about 4.8 days): **294,648 files,
+38.7 TiB, 0 skipped, 0 failed**, with no leftover `.ecrw.*` temp files. It moved about
+8.7 TiB/day on large files and slowed to ~200 files/min on the tiny-file `Roms/eXoDOS` tree.
+
+| | before | after |
+|---|---|---|
+| `cephfs-data` stored | 78 TiB | 38 TiB (Blue Iris footage from before the layout change, plus ~2 TiB of other data) |
+| `cephfs-ec` stored | 0 | 41 TiB |
+| raw used | 236 TiB (41.6%) | 196 TiB (34.5%) |
+
+During the run, median OSD apply latency rose from ~35 ms to ~100 ms, evenly across hosts.
+Squid's `BLUESTORE_SLOW_OP_ALERT` (threshold: one slow op, held for 24h) stayed on for the
+whole run. No camera recording gaps were seen.
+
+`cephfs-data` keeps shrinking by about 3 TiB/week as old Blue Iris segments age out, reaching
+about 2 TiB by early January 2027.
+
+### How it was run
 
 ```sh
 setfattr -n ceph.dir.layout.pool -v cephfs-ec /mnt/cephfs/media
@@ -107,7 +127,7 @@ scripts/ceph/rewrite-to-pool.sh --bwlimit 150000 \
 # progress: tail -f /var/log/ceph-rewrite-media.log
 ```
 
-Run it in `tmux`/`screen`. About 38.7 TiB at 150 MB/s is roughly 3 days, and freeing replicated
+Run it in `tmux` (installed on prox01). About 38.7 TiB at 150 MB/s is roughly 3 days, and freeing replicated
 space as it goes (3× → 2×) recovers about 39 TiB raw. The space is transiently one file larger
 at a time.
 
