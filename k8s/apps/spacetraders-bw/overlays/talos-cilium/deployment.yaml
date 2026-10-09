@@ -125,6 +125,13 @@ spec:
         # propose_trade was ~1.4 s of a ~2 s tick. Needs the #306 image.
         - name: ST_POLICY_NO_ROUTE_CACHE
           value: "on"
+        # TAYSUUS's strategy: bulk freighters on roaming cross-system routes,
+        # credits per request (spacetraders-erlang #319). Implies roam_trade;
+        # post-gate only. Buys SHIP_BULK_FREIGHTER, scraps 6 light freighters
+        # per bulk hull. A/B runs/ab-bulk-r2-h8-n12 (n=12, 8 h, live fleet):
+        # net worth +5.1% (sign-flip p 0.036), credits +20.2%. Needs the #319 image.
+        - name: ST_POLICY_BULK_HULLS
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
