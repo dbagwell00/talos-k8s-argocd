@@ -198,6 +198,12 @@ spec:
         # net worth +5.1% (sign-flip p 0.036), credits +20.2%. Needs the #319 image.
         - name: ST_POLICY_BULK_HULLS
           value: "on"
+        # A roaming hauler in a dead end moves to the best system it may trade
+        # in within 12 jumps (spacetraders-erlang #320). For BLOODWATTLE, boxed
+        # in by GOBBLICIDE's claims near home. A/B n=12: net worth +2.1% (n.s.),
+        # credits +5.7% (CI +1.2..+9.9%). Needs the #320 image.
+        - name: ST_POLICY_ROAM_REPOSITION
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
