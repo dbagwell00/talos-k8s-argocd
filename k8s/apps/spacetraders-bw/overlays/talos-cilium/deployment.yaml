@@ -138,6 +138,10 @@ spec:
         # credits +5.7% (CI +1.2..+9.9%). Needs the #320 image.
         - name: ST_POLICY_ROAM_REPOSITION
           value: "on"
+        # Probes on every market under the roam region, slack-only (IDLE tier),
+        # shared across the alliance line (spacetraders-erlang SPEC 6.3.7).
+        - name: ST_POLICY_MARKET_WATCH
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
