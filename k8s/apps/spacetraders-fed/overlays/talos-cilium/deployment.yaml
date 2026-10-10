@@ -50,6 +50,10 @@ spec:
               optional: true
         - name: ST_FED_AGENTS
           value: "GOBBLICIDE=http://spacetraders-erl-web.spacetraders-erl.svc,BLOODWATTLE=http://spacetraders-bw-web.spacetraders-bw.svc"
+        # The sim workers the Runners page polls (/status, token-free, read-only).
+        # The coordinator's own box pushes instead (scripts/local-runner.sh).
+        - name: ST_FED_RUNNERS
+          value: "prox03=http://192.168.4.203:8090,prox04=http://192.168.4.204:8090,prox01=http://192.168.4.205:8090"
         - name: PG_USER
           valueFrom:
             secretKeyRef:
