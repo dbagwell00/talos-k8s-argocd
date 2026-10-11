@@ -147,6 +147,9 @@ spec:
           value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_alliance"
         - name: ST_DATA_DIR
           value: /data
+        # The flight recorder (st_recorder): replayable inputs for every decision.
+        - name: ST_RECORD_DIR
+          value: /record
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
@@ -266,6 +269,8 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+        - name: record
+          mountPath: /record
         # Liveness is "the VM answers", not "the agent is trading". Tying it to
         # trading gets the pod killed during a game outage, which is exactly
         # when a restart helps least.
@@ -325,6 +330,9 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: spacetraders-erl-data
+      - name: record
+        persistentVolumeClaim:
+          claimName: spacetraders-erl-record
       # Multus removed eth0's default route, so the pod cannot reach the
       # cluster DNS service the normal way at the moment resolv.conf is
       # written. Point at gluetun first (it forwards to 1.1.1.1 through the

@@ -6,6 +6,7 @@ resources:
 - externalsecret.yaml
 - externalsecret-pg.yaml
 - pvc.yaml
+- pvc-record.yaml
 - deployment.yaml
 - service.yaml
 - network-policy.yaml
