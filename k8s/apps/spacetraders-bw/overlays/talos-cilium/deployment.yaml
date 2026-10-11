@@ -86,6 +86,9 @@ spec:
           value: "on"
         - name: ST_DATA_DIR
           value: /data
+        # The flight recorder (st_recorder): replayable inputs for every decision.
+        - name: ST_RECORD_DIR
+          value: /record
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
@@ -198,6 +201,8 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+        - name: record
+          mountPath: /record
         livenessProbe:
           httpGet:
             path: /healthz
@@ -216,3 +221,6 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: spacetraders-bw-data
+      - name: record
+        persistentVolumeClaim:
+          claimName: spacetraders-bw-record

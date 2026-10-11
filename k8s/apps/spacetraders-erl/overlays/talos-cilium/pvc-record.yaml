@@ -1,0 +1,20 @@
+# The flight recorder (spacetraders-erlang st_recorder): every API exchange,
+# every alliance/Postgres input and a boot snapshot, so any decision this agent
+# makes can be replayed in the sim later. ~100 MB/day compressed at full call
+# rate; never pruned by the agent.
+#
+# CephFS, not RBD, and ReadWriteMany on purpose: an extraction or replay job can
+# mount the recordings read-only next to the running agent, and a cephfs claim
+# expands in place when it fills.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spacetraders-erl-record
+  namespace: spacetraders-erl
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: ceph-cephfs
+  resources:
+    requests:
+      storage: 50Gi
