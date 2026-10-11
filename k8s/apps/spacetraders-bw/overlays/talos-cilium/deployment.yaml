@@ -79,6 +79,11 @@ spec:
         # unset turns the rule off. /live/ally shows what it blocked.
         - name: ST_ALLY_PG_URL
           value: "postgresql://$(PG_USER):$(PG_PASSWORD)@spacetraders-pg-rw.spacetraders.svc:5432/spacetraders_alliance"
+        # Every agent's credits + hulls every 5 min into the alliance DB for the
+        # Grafana Leaderboard dashboard (spacetraders-erlang st_leaderboard).
+        # ONE collector for the alliance: BLOODWATTLE only, GOBBLICIDE stays off.
+        - name: ST_LEADERBOARD
+          value: "on"
         - name: ST_DATA_DIR
           value: /data
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at

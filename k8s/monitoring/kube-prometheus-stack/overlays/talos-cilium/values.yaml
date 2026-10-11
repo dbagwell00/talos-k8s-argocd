@@ -260,6 +260,66 @@ grafana:
       secureJsonData:
         password: ${ST_PG_RO_PASSWORD}
 
+    # ST GOBBLICIDE: the Erlang agents' own databases (TURKEYBOI1's `spacetraders`
+    # above stopped at the 2026-10-04 reset). Same grafana_ro role; SELECT is
+    # granted on every table except agent_tokens.
+    - name: ST GOBBLICIDE
+      type: grafana-postgresql-datasource
+      uid: st-gob
+      access: proxy
+      url: spacetraders-pg-r.spacetraders.svc.cluster.local:5432
+      user: grafana_ro
+      jsonData:
+        database: spacetraders_erl
+        sslmode: require
+        postgresVersion: 1600
+        timescaledb: false
+        maxOpenConns: 5
+        maxIdleConns: 2
+        connMaxLifetime: 14400
+      secureJsonData:
+        password: ${ST_PG_RO_PASSWORD}
+
+    # ST BLOODWATTLE: the Erlang agents' own databases (TURKEYBOI1's `spacetraders`
+    # above stopped at the 2026-10-04 reset). Same grafana_ro role; SELECT is
+    # granted on every table except agent_tokens.
+    - name: ST BLOODWATTLE
+      type: grafana-postgresql-datasource
+      uid: st-bw
+      access: proxy
+      url: spacetraders-pg-r.spacetraders.svc.cluster.local:5432
+      user: grafana_ro
+      jsonData:
+        database: spacetraders_bw
+        sslmode: require
+        postgresVersion: 1600
+        timescaledb: false
+        maxOpenConns: 5
+        maxIdleConns: 2
+        connMaxLifetime: 14400
+      secureJsonData:
+        password: ${ST_PG_RO_PASSWORD}
+
+    # ST Alliance: the Erlang agents' own databases (TURKEYBOI1's `spacetraders`
+    # above stopped at the 2026-10-04 reset). Same grafana_ro role; SELECT is
+    # granted on every table except agent_tokens.
+    - name: ST Alliance
+      type: grafana-postgresql-datasource
+      uid: st-ally
+      access: proxy
+      url: spacetraders-pg-r.spacetraders.svc.cluster.local:5432
+      user: grafana_ro
+      jsonData:
+        database: spacetraders_alliance
+        sslmode: require
+        postgresVersion: 1600
+        timescaledb: false
+        maxOpenConns: 5
+        maxIdleConns: 2
+        connMaxLifetime: 14400
+      secureJsonData:
+        password: ${ST_PG_RO_PASSWORD}
+
   # Dashboard providers
   dashboardProviders:
     dashboardproviders.yaml:
