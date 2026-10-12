@@ -126,6 +126,13 @@ data:
           proxy_pass http://$up/live/$ep;
         }
 
+        # BLOODWATTLE: the same Erlang agent, same GET-only listener.
+        location ~ "^/bw/live/(?<bw_ep>[a-z_]{1,32})$" {
+          set $ep $bw_ep;
+          set $up spacetraders-bw-web.spacetraders-bw.svc.cluster.local;
+          proxy_pass http://$up/live/$ep;
+        }
+
         # Python agent: 5173 mixes reads with POST verbs; only these GETs.
         location ~ ^/py/(?<py_ep>healthz|api/(chart|limiter|coverage|expansion|config|market-freshness|mining/groups|probe-circuits|fleet/competitors|fleet/halts|fleet/system-targets))$ {
           set $ep $py_ep;

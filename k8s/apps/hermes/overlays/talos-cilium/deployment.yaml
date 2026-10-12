@@ -54,6 +54,7 @@ spec:
           install -d -o 10000 -g 10000 -m 0755 /opt/data/skills/spacetraders "$d" "$d/scripts"
           install -o 10000 -g 10000 -m 0644 /skill/SKILL.md "$d/SKILL.md"
           install -o 10000 -g 10000 -m 0755 /skill/st.py "$d/scripts/st.py"
+          install -o 10000 -g 10000 -m 0755 /skill/st_problems.py "$d/scripts/st_problems.py"
           h=/opt/data/skills/homelab/homelab-health
           install -d -o 10000 -g 10000 -m 0755 /opt/data/skills/homelab "$h" "$h/scripts" /opt/data/scripts
           install -o 10000 -g 10000 -m 0644 /skill-homelab/SKILL.md "$h/SKILL.md"
@@ -62,6 +63,7 @@ spec:
           # no arguments; health.py picks its mode from its file name.
           install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py /opt/data/scripts/health_check.py
           install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py /opt/data/scripts/health_report.py
+          install -o 10000 -g 10000 -m 0755 /skill/st_problems.py /opt/data/scripts/st_problems_check.py
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
