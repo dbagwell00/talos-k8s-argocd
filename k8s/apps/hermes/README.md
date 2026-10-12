@@ -8,7 +8,7 @@ LLM. Telegram does carry the chat itself, and bot chats are not end-to-end encry
 It does three things:
 
 - answers questions in chat
-- reports on the SpaceTraders agents (P&L, credits, leaderboard, logs): skill `spacetraders-ops`
+- reports on the SpaceTraders agents (P&L, credits, leaderboard, logs, open problems): skill `spacetraders-ops`, plus the hourly `st-problems` job
 - watches the homelab (Samba/CTDB/CephFS/Ceph on the Proxmox hosts, SpaceTraders pods):
   skill `homelab-health`, plus two scheduled jobs
 
@@ -99,7 +99,7 @@ The secret is mounted `optional`, so Hermes runs without Telegram if it's missin
 
 ## Scheduled jobs
 
-Both jobs are script-only (`--no-agent`): they never call the model, so they keep working
+All three jobs are script-only (`--no-agent`): they never call the model, so they keep working
 when Qwen is down. They live on the PVC (`/opt/data/cron/jobs.json`), not in git. Recreate
 them if the PVC is ever lost:
 
@@ -107,6 +107,7 @@ them if the PVC is ever lost:
 H='kubectl -n hermes exec deploy/hermes -c hermes -- /command/s6-setuidgid hermes hermes'
 $H cron create "every 15m" --no-agent --script health_check.py  --name homelab-watch  --deliver telegram:<chat_id>
 $H cron create "0 8 * * *" --no-agent --script health_report.py --name homelab-digest --deliver telegram:<chat_id>
+$H cron create "every 1h"  --no-agent --script st_problems_check.py --name st-problems --deliver telegram:<chat_id>
 $H cron list
 $H cron run homelab-digest      # send one now
 ```
@@ -120,6 +121,10 @@ What each job sends:
   worse, cleared, or is still open. It reminds every 6h for critical and daily for warning.
   Its state is in `/opt/data/cron/homelab-health-state.json`; delete that file to reset.
 - **`homelab-digest`** sends the full report at 8am.
+- **`st-problems`** runs hourly. It reads both SpaceTraders agents' problem detectors
+  (`/erl/live/problems`, `/bw/live/problems`) and stays silent unless a finding is new,
+  went from WARN to CRIT, cleared, or is still open (reminds every 2h for CRIT, 12h for
+  WARN). State is in `/opt/data/cron/st-problems-state.json`.
 
 ## Operating notes
 

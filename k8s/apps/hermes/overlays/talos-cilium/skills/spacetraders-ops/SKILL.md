@@ -1,6 +1,6 @@
 ---
 name: spacetraders-ops
-description: Check on our two SpaceTraders agents — profit and loss, credits, leaderboard standing, logs, and live fleet state. Use whenever the user asks how the agents, the fleet, GOBBLICIDE, TURKEYBOI, P&L, credits, earnings, or the leaderboard are doing, or wants agent logs.
+description: Check on our two SpaceTraders agents — profit and loss, credits, leaderboard standing, logs, live fleet state, and open problems. Use whenever the user asks how the agents, the fleet, GOBBLICIDE, TURKEYBOI, P&L, credits, earnings, or the leaderboard are doing, or wants agent logs.
 version: 1.0.0
 metadata:
   hermes:
@@ -37,6 +37,23 @@ python3 /opt/data/skills/spacetraders/spacetraders-ops/scripts/st.py <command>
 | `logs erl\|py [--minutes N] [--grep TOKEN] [--limit N]` | Recent log lines, newest last. `--grep` takes one token of letters, digits, `._:-` (no spaces), e.g. a ship symbol, `ERROR`, `WARNING`. Defaults: 15 minutes, 100 lines; max 500 lines. |
 | `erl <view>` | One raw Erlang dashboard view, truncated. Useful views: `state`, `clock`, `pnl`, `capital`, `budget`, `limiter`, `contracts`, `ticks`, `gate`, `charting`, `intent`. Avoid `all`, `universe`, `markets`, `ships`: they are huge. |
 | `py <path>` | One raw Python-agent view, truncated: `api/limiter`, `api/mining/groups`, `api/fleet/halts`, `api/fleet/competitors`, `api/probe-circuits`, `api/market-freshness`, `api/config`, `healthz`. |
+
+## Problems (both agents)
+
+```
+python3 /opt/data/skills/spacetraders/spacetraders-ops/scripts/st_problems.py report
+```
+
+Each agent (GOBBLICIDE and BLOODWATTLE) runs its own problem detector; this
+prints every open finding with a hint and a replay link. Use it for "is anything
+wrong", "any problems", "why is profit down". An hourly cron job
+(`st-problems`) already messages the user when a finding appears, gets worse,
+or clears, so don't repeat findings they were just sent unless asked.
+
+Finding keys: `planner_failing` and `no_orders` (CRIT: the agent is not
+deciding), `never_read` (markets nobody has priced), `repeated_failure` (an
+order loop), `thin_trades` and `margin_collapse` (trade drying up),
+`gate_starved`, `idle_haulers`, `typeless_listings`, `recorder`, `db_down`.
 
 ## How to answer
 
