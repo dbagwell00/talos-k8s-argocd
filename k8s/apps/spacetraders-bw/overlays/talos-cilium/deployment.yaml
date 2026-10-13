@@ -113,6 +113,9 @@ spec:
         # earning ~6k/hr each against ~50k/hr for a light freighter.
         - name: ST_POLICY_TRADER_FLEET_CAP
           value: "on"
+        # spacetraders-erlang #353: the pump buys only healthy exports/exchanges
+        - name: ST_POLICY_PUMP_HEALTHY_SOURCES
+          value: "on"
         # The land-grab bundle (spacetraders-erlang #298): pre-gate yard survey
         # by market signature + gate watch, asteroids last, relay density one
         # probe per system, relay batch buys, no home restock post-gate.
