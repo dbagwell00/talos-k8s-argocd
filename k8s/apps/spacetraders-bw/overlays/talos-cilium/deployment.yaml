@@ -116,6 +116,9 @@ spec:
         # spacetraders-erlang #353: the pump buys only healthy exports/exchanges
         - name: ST_POLICY_PUMP_HEALTHY_SOURCES
           value: "on"
+        # spacetraders-erlang #354: a feed ends by reading the factory it fed
+        - name: ST_POLICY_PUMP_READS_FACTORY
+          value: "on"
         # The land-grab bundle (spacetraders-erlang #298): pre-gate yard survey
         # by market signature + gate watch, asteroids last, relay density one
         # probe per system, relay batch buys, no home restock post-gate.
