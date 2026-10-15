@@ -1,0 +1,31 @@
+# ClusterIP for spacetraders-fed's /sim/ proxy, plus a LAN address so the
+# workstation that collects A/B results can publish to it (PUT needs the login).
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-sim
+  namespace: spacetraders-sim
+spec:
+  type: ClusterIP
+  selector:
+    app: spacetraders-sim
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spacetraders-sim-lan
+  namespace: spacetraders-sim
+  annotations:
+    io.cilium/lb-ipam-ips: "192.168.4.146"
+spec:
+  type: LoadBalancer
+  selector:
+    app: spacetraders-sim
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080

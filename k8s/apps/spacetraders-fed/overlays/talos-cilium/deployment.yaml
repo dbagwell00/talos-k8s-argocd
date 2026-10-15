@@ -41,7 +41,8 @@ spec:
               name: spacetraders-federation
               key: FEDERATION_USERS
         # Our own dashboards, behind their own login (spacetraders-erlang #316):
-        # /<AGENT>/... is proxied GET-only to each agent's read-only listener.
+        # /<AGENT>/... is proxied GET-only to each agent's read-only listener;
+        # /sim/... the same way to the sim replay server (spacetraders-sim).
         - name: UI_USERS
           valueFrom:
             secretKeyRef:
@@ -49,7 +50,7 @@ spec:
               key: UI_USERS
               optional: true
         - name: ST_FED_AGENTS
-          value: "GOBBLICIDE=http://spacetraders-erl-web.spacetraders-erl.svc,BLOODWATTLE=http://spacetraders-bw-web.spacetraders-bw.svc"
+          value: "GOBBLICIDE=http://spacetraders-erl-web.spacetraders-erl.svc,BLOODWATTLE=http://spacetraders-bw-web.spacetraders-bw.svc,sim=http://spacetraders-sim.spacetraders-sim.svc"
         # The sim workers the Runners page polls (/status, token-free, read-only).
         # The coordinator's own box pushes instead (scripts/local-runner.sh).
         - name: ST_FED_RUNNERS
