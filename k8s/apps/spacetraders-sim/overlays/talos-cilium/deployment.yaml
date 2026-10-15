@@ -1,0 +1,78 @@
+# Sim replay server: the A/B experiments the sim workers ran, as files the
+# viewer (sim_replay.html) plays back -- probes and haulers across the galaxy,
+# both arms of a seed side by side. Plain nginx on CephFS: nothing here talks
+# to the game, holds a token, or touches either agent.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spacetraders-sim
+  namespace: spacetraders-sim
+  labels:
+    app: spacetraders-sim
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spacetraders-sim
+  template:
+    metadata:
+      labels:
+        app: spacetraders-sim
+    spec:
+      initContainers:
+      - name: data-perms
+        # CephFS mounts root-owned and ignores fsGroup (see spacetraders-erl
+        # record-perms); nginx-unprivileged runs as uid 101.
+        image: busybox
+        command: ["sh", "-c", "chown 101:101 /data && chmod 2775 /data"]
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      containers:
+      - name: nginx
+        image: nginxinc/nginx-unprivileged:1.27-alpine
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 101
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          seccompProfile:
+            type: RuntimeDefault
+        ports:
+        - containerPort: 8080
+          name: http
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: conf
+          mountPath: /etc/nginx/conf.d
+        - name: publish
+          mountPath: /etc/nginx/publish
+          readOnly: true
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          periodSeconds: 10
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: spacetraders-sim-data
+      - name: conf
+        configMap:
+          name: spacetraders-sim-nginx
+      - name: publish
+        secret:
+          secretName: spacetraders-sim-publish

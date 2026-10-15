@@ -1,0 +1,17 @@
+# Sim replays (spacetraders-erlang scripts/sim-publish.sh): per experiment, its
+# manifest + A/B report (experiment.json), the viewer, and one tracks.json per
+# seed and arm (~0.1-1 MB each; raw recordings optional, ~30 MB a run).
+# CephFS RWX like the agents' flight recorders: a job can mount it next to the
+# server, and the claim grows in place.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spacetraders-sim-data
+  namespace: spacetraders-sim
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: ceph-cephfs
+  resources:
+    requests:
+      storage: 100Gi
