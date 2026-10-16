@@ -232,6 +232,15 @@ spec:
         # shared across the alliance line (spacetraders-erlang SPEC 6.3.7).
         - name: ST_POLICY_MARKET_WATCH
           value: "on"
+        # T5 beams + Time To Hauler: vanguard hulls beam to the nearest likely T5
+        # systems and buy the first hauler at the T5's yard; each beam reads its
+        # own gate on arrival (spacetraders-erlang #357). Sim A/Bs (n=12, h48):
+        # beams on vs off +10.2% net worth (CI +2.1..+18.5), gate read +9.5%,
+        # T5s with a hauler by h48 48/60 -> 58/60. Needs the #357 image.
+        - name: ST_POLICY_T5_BEAM
+          value: "on"
+        - name: ST_POLICY_BEAM_READ_GATE
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
