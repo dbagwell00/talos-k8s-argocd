@@ -175,6 +175,22 @@ spec:
           value: "on"
         - name: ST_POLICY_BEAM_READ_GATE
           value: "on"
+        # TTH + shared gate graph (spacetraders-erlang #358, #359; image a5fd51e).
+        # Sim A/Bs (RV5, n=12, pre-registered): the T5 hauler buy skips the
+        # in-flight cap: TTH -0.96 h (11/12, p 0.0005). Beam waves keep 5 T5
+        # targets open all reset: net worth +7.3% at h72 (CI +1.4..+14.0), T5s
+        # with a hauler 5 -> 13.9. read_gates is neutral in the sim (+0.2%,
+        # ~40 extra gate reads a run); with ally_edges every gate edge our ships
+        # learn goes to the alliance graph, which the other agent re-reads every
+        # 5 min. Both agents need ally_edges (the reader scopes by reset_id).
+        - name: ST_POLICY_TTH_NO_PIPELINE
+          value: "on"
+        - name: ST_POLICY_BEAM_WAVES
+          value: "on"
+        - name: ST_POLICY_READ_GATES
+          value: "on"
+        - name: ST_POLICY_ALLY_EDGES
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
