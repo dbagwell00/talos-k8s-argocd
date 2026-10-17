@@ -3,7 +3,8 @@
 # inside the pod lasts only until the next restart. The image's own startup
 # runs schema migrations on whatever lands here.
 #
-# Qwen runs in Docker (vLLM) on 192.168.1.55 outside the cluster, and Hermes doesn't
+# Qwen runs in Docker (ninfer on :8080) on 192.168.1.55 outside the cluster,
+# and context_length matches its max_model_len (74752). Hermes doesn't
 # depend on it being up: no probe or init step touches it, so with Qwen down
 # the pod stays Running and only model calls fail.
 apiVersion: v1
@@ -18,4 +19,4 @@ data:
       default: qwen3.8-27b
       base_url: http://192.168.1.55:8080/v1
       api_key: none
-      context_length: 150000
+      context_length: 74752

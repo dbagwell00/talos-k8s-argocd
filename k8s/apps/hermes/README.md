@@ -21,8 +21,8 @@ container is treated as hostile and every boundary is enforced outside it:
 Telegram ──(outbound long-poll only)──┐
                                       │
                     ┌─────────────────┴───────────────┐
- Qwen (vLLM) ◀──────│  hermes pod                     │  no Service, ingress default-deny,
- :18020             │  no SA token, minimal caps,     │  DNS answers only for Telegram
+ Qwen (ninfer) ◀────│  hermes pod                     │  no Service, ingress default-deny,
+ :8080              │  no SA token, minimal caps,     │  DNS answers only for Telegram
                     │  egress allowlist (CNP)         │  and st-readonly
                     └─────────────────┬───────────────┘
                                       │ GET only (Cilium L7 + nginx)
