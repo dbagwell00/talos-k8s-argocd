@@ -53,7 +53,7 @@ spec:
     - 192.168.1.55/32
     toPorts:
     - ports:
-      - port: "18020"
+      - port: "8080"
         protocol: TCP
   # GET enforced at L7 as well as in the gateway itself.
   - toEndpoints:
