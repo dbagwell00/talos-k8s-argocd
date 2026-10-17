@@ -4,6 +4,9 @@ GitOps configuration for a two-cluster, bare-metal **Kubernetes** homelab runnin
 **Talos Linux**, continuously reconciled by **Argo CD**. Everything here is declarative —
 the clusters are a pure function of this repository.
 
+Ceph storage notes, including why bulk CephFS data is moving to erasure coding, are in
+**[docs/ceph-erasure-coding.md](docs/ceph-erasure-coding.md)**.
+
 The OS/infrastructure layer beneath Argo CD — Proxmox VM provisioning (OpenTofu) and Talos
 machine config — is documented in **[TALOS.md](TALOS.md)** (code under [`talos/`](talos/)).
 
