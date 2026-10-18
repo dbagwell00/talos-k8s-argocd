@@ -191,6 +191,14 @@ spec:
           value: "on"
         - name: ST_POLICY_ALLY_EDGES
           value: "on"
+        # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
+        # pre-gate the gate may spend down to max(150k, 50k + the pending light
+        # hauler) instead of trade working capital + hull reserve (580-700k).
+        # Corrected sim (#360-#364), these policies, 5 live homes x 3 seeds,
+        # 30 h: worst gate h23/h24/h21 -> h20/h22/h20, mean -0.87 h (10 better,
+        # 3 worse, 2 same), net worth at h30 +12.4 %; no run past h22.
+        - name: ST_POLICY_TB1_GATE_FLOOR
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
