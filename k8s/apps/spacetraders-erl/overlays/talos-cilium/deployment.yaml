@@ -257,6 +257,12 @@ spec:
           value: "on"
         - name: ST_POLICY_ALLY_EDGES
           value: "on"
+        # Other agents' trades in the markets we read (spacetraders-erlang #366):
+        # kept from each market read's transaction list (no extra calls) for
+        # /live/competitors and the competitor_trades table. ~40% of the trades
+        # in our markets are other agents' (GOB sample, 2026-10-18).
+        - name: ST_POLICY_COMPETITOR_WATCH
+          value: "on"
         # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
         # pre-gate the gate may spend down to max(150k, 50k + the pending light
         # hauler) instead of trade working capital + hull reserve (580-700k).
