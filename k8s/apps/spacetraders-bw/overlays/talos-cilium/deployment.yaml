@@ -197,6 +197,11 @@ spec:
         # in our markets are other agents' (GOB sample, 2026-10-18).
         - name: ST_POLICY_COMPETITOR_WATCH
           value: "on"
+        # Price the markets nobody has read (GOB has run this since argocd #85).
+        # BW lacked it: reset 10-18 h2.3, 10 of 26 home markets unread vs GOB's
+        # 0, operating profit 110k/h vs GOB's 375k/h and the book 35 min behind.
+        - name: ST_POLICY_TRADER_SCOUT
+          value: "on"
         # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
         # pre-gate the gate may spend down to max(150k, 50k + the pending light
         # hauler) instead of trade working capital + hull reserve (580-700k).
