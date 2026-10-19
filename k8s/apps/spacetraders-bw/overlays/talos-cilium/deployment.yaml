@@ -208,8 +208,15 @@ spec:
         # Corrected sim (#360-#364), these policies, 5 live homes x 3 seeds,
         # 30 h: worst gate h23/h24/h21 -> h20/h22/h20, mean -0.87 h (10 better,
         # 3 worse, 2 same), net worth at h30 +12.4 %; no run past h22.
+        # OFF since 2026-10-19: live 10-18 (its first reset) froze both fleets at
+        # 5 cargo hulls from h1 -- the gate spent down to ~354k while a book light
+        # hauler needs ~600k (trade working capital + price), so it never bought;
+        # FAB_MATS inputs went unfed, the factory starved from h12, gates ~h29/~h35
+        # vs h23.4/h27.4 the week before with it off. The sim missed it: its
+        # FAB_MATS factory never starves (spacetraders-erlang
+        # docs/failures/2026-10-19-ab-baseline-missed-live-policies.md).
         - name: ST_POLICY_TB1_GATE_FLOOR
-          value: "on"
+          value: "off"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
