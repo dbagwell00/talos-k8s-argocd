@@ -22,6 +22,7 @@ configMapGenerator:
   - skills/spacetraders-ops/SKILL.md
   - skills/spacetraders-ops/scripts/st.py
   - skills/spacetraders-ops/scripts/st_problems.py
+  - skills/spacetraders-ops/scripts/st_experiment_watch.py
 - name: hermes-skill-homelab
   namespace: hermes
   files:

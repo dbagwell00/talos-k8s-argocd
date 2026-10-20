@@ -64,6 +64,8 @@ spec:
           install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py /opt/data/scripts/health_check.py
           install -o 10000 -g 10000 -m 0755 /skill-homelab/health.py /opt/data/scripts/health_report.py
           install -o 10000 -g 10000 -m 0755 /skill/st_problems.py /opt/data/scripts/st_problems_check.py
+          install -o 10000 -g 10000 -m 0755 /skill/st_experiment_watch.py "$d/scripts/st_experiment_watch.py"
+          install -o 10000 -g 10000 -m 0755 /skill/st_experiment_watch.py /opt/data/scripts/st_experiment_watch_check.py
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
