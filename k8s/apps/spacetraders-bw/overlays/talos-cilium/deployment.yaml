@@ -215,8 +215,10 @@ spec:
         # vs h23.4/h27.4 the week before with it off. The sim missed it: its
         # FAB_MATS factory never starves (spacetraders-erlang
         # docs/failures/2026-10-19-ab-baseline-missed-live-policies.md).
+        # 10-25 A/B (spacetraders-erlang docs/experiments/2026-10-25-gate-floor-ab.md):
+        # BW floor ON, GOB floor OFF, same code and every other policy.
         - name: ST_POLICY_TB1_GATE_FLOOR
-          value: "off"
+          value: "on"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
         # runs the planner and every worker across all schedulers. So a CPU
         # limit here would actually bite, where on the Python pod it was
