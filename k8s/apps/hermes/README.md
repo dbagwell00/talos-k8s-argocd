@@ -108,6 +108,7 @@ H='kubectl -n hermes exec deploy/hermes -c hermes -- /command/s6-setuidgid herme
 $H cron create "every 15m" --no-agent --script health_check.py  --name homelab-watch  --deliver telegram:<chat_id>
 $H cron create "0 8 * * *" --no-agent --script health_report.py --name homelab-digest --deliver telegram:<chat_id>
 $H cron create "every 1h"  --no-agent --script st_problems_check.py --name st-problems --deliver telegram:<chat_id>
+$H cron create "every 15m" --no-agent --script st_experiment_watch_check.py --name st-experiment-watch --deliver telegram:<chat_id>
 $H cron list
 $H cron run homelab-digest      # send one now
 ```
@@ -125,6 +126,14 @@ What each job sends:
   (`/erl/live/problems`, `/bw/live/problems`) and stays silent unless a finding is new,
   went from WARN to CRIT, cleared, or is still open (reminds every 2h for CRIT, 12h for
   WARN). State is in `/opt/data/cron/st-problems-state.json`.
+
+- **`st-experiment-watch`** runs every 15 minutes, pre-gate only, observe-only. Three
+  alarms, each alerting once after holding 1 h and once when it clears: trader deadlock
+  (`/live/ramp` wants traders, hull budget 0), a gate material `starved_export`
+  (`/live/gate`), and last hour's trade sales under half the agent's own median since ~h2
+  (`/live/pnl`). Thresholds are pre-registered for the 10-25 gate-floor A/B
+  (spacetraders-erlang `docs/experiments/2026-10-25-gate-floor-ab.md`); do not tune them
+  mid-reset. State is in `/opt/data/cron/st-experiment-watch-state.json`.
 
 ## Operating notes
 
