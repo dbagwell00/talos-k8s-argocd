@@ -90,30 +90,23 @@ spec:
         - containerPort: 8080
           name: web
         env:
-        # Agent identity. TEMPORARY OVERRIDE (2026-10-20): a fresh agent,
-        # GOBBLICIDE5, runs the gate race from h0 mid-reset on the 10-25 GOB arm's
-        # exact code and policies (whater-order book #370, pump priority #372-#374,
-        # TB1_GATE_FLOOR off) -- a live preview of the new opening. GOBBLICIDE was
-        # post-gate and stalled (#40, 168k, 19 ships).
-        # Registered from inside the pod with ACCOUNT_TOKEN; its token lives in the
-        # agent's own Postgres token store (st_reset reads that before the
-        # environment), so AGENT_TOKEN is deliberately empty here.
-        # Home X1-SV63 (gate I55 untouched at registration).
-        # 2026-10-21: GOBBLICIDE6 replaces GOBBLICIDE5 the same way (a second mid-week
-        # holdout world for the hidden-state project); home X1-XQ16, gate I55 untouched.
-        # 2026-10-23: GOBBLICIDE7 replaces GOBBLICIDE6 (home X1-CP96, gate I58 untouched),
-        # running lane_reopen_moderate ON (below) -- a live run of the sim A/B winner
-        # (spacetraders-erlang #409/#410). The #101 revert removes the policy with the identity.
-        # REVERT to the Vault secretKeyRefs (git history) ~a day BEFORE the
-        # 2026-10-25 reset: st_reset_guard registers whatever AGENT_SYMBOL the pod
-        # holds when it sees the reset, and the 10-25 A/B arm is GOBBLICIDE.
+        # Agent identity (from Vault via ExternalSecret).
         - name: AGENT_TOKEN
-          value: ""
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: AGENT_TOKEN
         - name: AGENT_SYMBOL
-          value: "GOBBLICIDE7"
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: AGENT_SYMBOL
         # Headquarters waypoint; the home system is derived from it.
         - name: ST_HQ
-          value: "X1-CP96-A1"
+          valueFrom:
+            secretKeyRef:
+              name: spacetraders-erl-agent
+              key: ST_HQ
         # The faction to register with. It decides the STARTING SYSTEM, so it
         # decides which universe the agent wakes up in -- including whether
         # that system's jump gate is already built by an established agent.
@@ -283,10 +276,6 @@ spec:
         # vs h23.4/h27.4 the week before with it off. The sim missed it: its
         # FAB_MATS factory never starves (spacetraders-erlang
         # docs/failures/2026-10-19-ab-baseline-missed-live-policies.md).
-        # GOBBLICIDE7 only (2026-10-23, spacetraders-erlang #410): reopen a rested buy side
-        # at MODERATE, not LIMITED. REMOVED by the #101 revert before the 10-25 reset.
-        - name: ST_POLICY_LANE_REOPEN_MODERATE
-          value: "on"
         - name: ST_POLICY_TB1_GATE_FLOOR
           value: "off"
         # Unlike the Python agent, this one is genuinely parallel: the BEAM
