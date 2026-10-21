@@ -99,16 +99,18 @@ spec:
         # agent's own Postgres token store (st_reset reads that before the
         # environment), so AGENT_TOKEN is deliberately empty here.
         # Home X1-SV63 (gate I55 untouched at registration).
+        # 2026-10-21: GOBBLICIDE6 replaces GOBBLICIDE5 the same way (a second mid-week
+        # holdout world for the hidden-state project); home X1-XQ16, gate I55 untouched.
         # REVERT to the Vault secretKeyRefs (git history) ~a day BEFORE the
         # 2026-10-25 reset: st_reset_guard registers whatever AGENT_SYMBOL the pod
         # holds when it sees the reset, and the 10-25 A/B arm is GOBBLICIDE.
         - name: AGENT_TOKEN
           value: ""
         - name: AGENT_SYMBOL
-          value: "GOBBLICIDE5"
+          value: "GOBBLICIDE6"
         # Headquarters waypoint; the home system is derived from it.
         - name: ST_HQ
-          value: "X1-SV63-A1"
+          value: "X1-XQ16-A1"
         # The faction to register with. It decides the STARTING SYSTEM, so it
         # decides which universe the agent wakes up in -- including whether
         # that system's jump gate is already built by an established agent.
