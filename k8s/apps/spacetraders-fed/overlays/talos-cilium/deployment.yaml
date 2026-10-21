@@ -50,9 +50,9 @@ spec:
               key: UI_USERS
               optional: true
         - name: ST_FED_AGENTS
-          # GOBBLICIDE5 (mid-week fresh agent, 2026-10-20 -> 10-24) runs in the same
-          # pod as GOBBLICIDE, so both names reach it. Drop GOBBLICIDE5 after 10-25.
-          value: "GOBBLICIDE=http://spacetraders-erl-web.spacetraders-erl.svc,GOBBLICIDE5=http://spacetraders-erl-web.spacetraders-erl.svc,BLOODWATTLE=http://spacetraders-bw-web.spacetraders-bw.svc,sim=http://spacetraders-sim.spacetraders-sim.svc"
+          # GOBBLICIDE5 (2026-10-20) and GOBBLICIDE6 (2026-10-21 -> 10-24), mid-week fresh
+          # agents, run in GOBBLICIDE's pod, so all three names reach it. Drop 5 and 6 after 10-25.
+          value: "GOBBLICIDE=http://spacetraders-erl-web.spacetraders-erl.svc,GOBBLICIDE5=http://spacetraders-erl-web.spacetraders-erl.svc,GOBBLICIDE6=http://spacetraders-erl-web.spacetraders-erl.svc,BLOODWATTLE=http://spacetraders-bw-web.spacetraders-bw.svc,sim=http://spacetraders-sim.spacetraders-sim.svc"
         # The sim workers the Runners page polls (/status, token-free, read-only).
         # The coordinator's own box pushes instead (scripts/local-runner.sh).
         - name: ST_FED_RUNNERS
