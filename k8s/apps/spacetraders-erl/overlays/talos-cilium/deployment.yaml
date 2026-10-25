@@ -322,7 +322,7 @@ spec:
         resources:
           requests:
             cpu: 250m
-            memory: 512Mi
+            memory: 1Gi
           limits:
             # 1 -> 2 (2026-09-26): 997m of 1000m at 188 ships, ticks 6-8 s
             # against a 5 s interval.
@@ -332,7 +332,12 @@ spec:
             # CFS throttling only -- expansion runs serially in the planner, so
             # its growth with known systems is the real fix.
             cpu: "4"
-            memory: 2Gi
+            # memory 2Gi -> 4Gi, request 512Mi -> 1Gi (2026-10-25): BLOODWATTLE
+            # OOMKilled 5x in 14 h at the week-end fleet (last 04:49 UTC, 36 min
+            # after its own restart; 1.34Gi 94 min after that); GOBBLICIDE 639Mi.
+            # Steady state 0.6-1.3Gi, so the request follows it. talos-cilium-1
+            # memory was 56% used when this was written.
+            memory: 4Gi
         volumeMounts:
         - name: data
           mountPath: /data
