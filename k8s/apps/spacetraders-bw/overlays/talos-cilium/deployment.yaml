@@ -162,6 +162,12 @@ spec:
         # credits +5.7% (CI +1.2..+9.9%). Needs the #320 image.
         - name: ST_POLICY_ROAM_REPOSITION
           value: "on"
+        # Roam radius 1 jump (default 4). Measured on BW's 10-25 reset: roam took
+        # 81% of trade ship-hours; realized/ship-h 0j 1.8M, 1j 549k, 2j 275k,
+        # 3-4j ~154k, 5+j 96k vs in-system trade 1.25M / tour 988k. Roam over 1
+        # jump realized 42-53% of its predicted rate. Not A/B'd: live change.
+        - name: ST_ROAM_HOPS
+          value: "1"
         # Probes on every market under the roam region, slack-only (IDLE tier),
         # shared across the alliance line (spacetraders-erlang SPEC 6.3.7).
         - name: ST_POLICY_MARKET_WATCH
