@@ -222,6 +222,11 @@ spec:
         # net worth +5.1% (sign-flip p 0.036), credits +20.2%. Needs the #319 image.
         - name: ST_POLICY_BULK_HULLS
           value: "on"
+        # Roam radius 1 jump (default 4), as on BLOODWATTLE (argocd #109).
+        # Measured on BW's 10-25 reset: roam took 81% of trade ship-hours;
+        # realized/ship-h 1j 549k, 2j 275k, 5+j 96k vs in-system trade 1.25M.
+        - name: ST_ROAM_HOPS
+          value: "1"
         # A roaming hauler in a dead end moves to the best system it may trade
         # in within 12 jumps (spacetraders-erlang #320). For BLOODWATTLE, boxed
         # in by GOBBLICIDE's claims near home. A/B n=12: net worth +2.1% (n.s.),
