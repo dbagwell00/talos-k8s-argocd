@@ -104,6 +104,9 @@ Outside Talos entirely, each Proxmox host runs the `homelab-health` systemd time
 Ceph health as node-exporter textfile metrics, installed by
 `scripts/proxmox-health/install.sh`.
 
+Guest backups (vzdump) and the rule that prox03 must not NFS-mount its own backup export are
+in [`docs/proxmox-backups.md`](docs/proxmox-backups.md).
+
 ## What is **not** in this repo (and why)
 
 These are gitignored — they hold secrets or are per-environment, and this repo is public:
