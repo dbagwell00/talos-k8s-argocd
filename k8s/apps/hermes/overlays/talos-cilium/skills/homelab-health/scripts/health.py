@@ -55,7 +55,6 @@ PROBES = {
 }
 SKIP_NS = {"spacetraders", "spacetraders-erl"}  # covered by the SpaceTraders block
 CAM_STALE = 300          # s without a write before a camera counts as not recording
-ALERT_QUIET = 12 * 3600  # s without any alert image
 
 
 def host(inst):
@@ -241,8 +240,9 @@ def evaluate():
 
     # ---- Blue Iris (clips on CephFS) ---------------------------------------------
     try:
-        ages = {m["camera"]: v for m, v in prom("bi_camera_age")}
-        rates = {m["camera"]: v for m, v in prom("bi_bitrate")}
+        # skip unlabeled series: an empty listing (CephFS hung) once produced camera=""
+        ages = {m["camera"]: v for m, v in prom("bi_camera_age") if m.get("camera")}
+        rates = {m["camera"]: v for m, v in prom("bi_bitrate") if m.get("camera")}
     except Exception as e:
         ages, rates = {}, {}
         bad("bi_metrics", "WARN", f"Blue Iris metrics unavailable ({e})")
@@ -256,11 +256,12 @@ def evaluate():
                  + (f" ({', '.join(f'{c} {8 * r / 1e6:.1f} Mb/s' for c, r in sorted(rates.items()))})" if rates else ""))
     now_s = time.time()
     last_alert = max((v for _, v in by.get("homelab_blueiris_alert_last_seconds", [])), default=None)
-    if last_alert is not None:
-        if last_alert == 0 or now_s - last_alert > ALERT_QUIET:
-            bad("bi_alerts", "WARN", "no Blue Iris alert images in 12h+ (AI/motion triggers may be broken)")
-        else:
-            F.append(f"Blue Iris last alert {int((now_s - last_alert) / 60)} min ago")
+    # Alert images only appear when something triggers, so a quiet day is normal: a fact, not a problem.
+    if last_alert:
+        mins = int((now_s - last_alert) / 60)
+        F.append(f"Blue Iris last alert {mins} min ago" if mins < 120 else f"Blue Iris last alert {mins // 60}h ago")
+    elif last_alert is not None:
+        F.append("Blue Iris: no alerts in the last 24h")
     oldest = min((v for _, v in by.get("homelab_blueiris_new_oldest_seconds", []) if v > 0), default=None)
     if oldest and now_s - oldest > 2 * 86400:
         since = datetime.fromtimestamp(oldest).astimezone().strftime("%b %-d")

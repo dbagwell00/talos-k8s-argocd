@@ -126,7 +126,8 @@ if timeout -k 1 $T test -d "$bi/new"; then
   help homelab_blueiris_camera_last_write_seconds "Unix mtime of the camera's newest .bvr segment in new/."
   help homelab_blueiris_camera_segment_bytes "Size of the camera's newest .bvr segment (grows while recording)."
   # newest segment per camera: file name is <CAMERA>.<YYYYMMDD_HHMMSSZ>.bvr
-  awk '{ split($3, a, "."); cam = a[1];
+  # (NF < 3: an empty listing is one blank line, which would emit camera="")
+  awk 'NF >= 3 { split($3, a, "."); cam = a[1];
          if (!(cam in t) || $1 > t[cam]) { t[cam] = $1; sz[cam] = $2 } }
        END { for (c in t) {
          printf "homelab_blueiris_camera_last_write_seconds{camera=\"%s\"} %d\n", c, t[c];
