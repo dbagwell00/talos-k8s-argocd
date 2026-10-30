@@ -29,6 +29,9 @@ spec:
           subPath: nginx.conf
         - name: smb-mnt
           mountPath: /mnt/mnt
+        - name: media
+          mountPath: /mnt/media
+          readOnly: true
         resources:
           limits:
             cpu: 500m
@@ -43,3 +46,7 @@ spec:
       - name: smb-mnt
         persistentVolumeClaim:
           claimName: smb-mnt
+      - name: media
+        persistentVolumeClaim:
+          claimName: filebrowser-media
+          readOnly: true
