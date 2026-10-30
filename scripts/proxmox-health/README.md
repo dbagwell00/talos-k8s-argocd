@@ -27,6 +27,10 @@ account. That's why the homelab watch needs no SSH access to the hosts.
 | `homelab_blueiris_camera_segment_bytes{camera}` | Per-camera bitrate, via `rate()` |
 | `homelab_blueiris_alert_last_seconds` | AI/motion alerts still firing (`alerts/` JPEGs) |
 | `homelab_blueiris_new_files`, `homelab_blueiris_new_oldest_seconds` | Rotation from `new/` to `stored/` stuck |
+| `homelab_pcie_aer_lines_5m` | Correctable PCIe errors; prox01's NVMe link (`c6:00.0`) logs ~7/s |
+| `homelab_jellyfin_{ct_running,up,rootfs_free_ratio}` | Jellyfin (LXC 109) up, and its root disk (99% full on 2026-10-30). Only on the host that owns CT 109 |
+| `homelab_jellyfin_vpn_handshake_seconds`, `homelab_jellyfin_wan_ok`, `homelab_jellyfin_watchdog_reconnects_24h` | Its NordVPN tunnel, its only way out (dead for 77 days until 2026-10-30), and the in-CT `nordvpn-watchdog` timer's reconnects |
+| `homelab_jellyfin_library_errors_1h` | Failed metadata lookups (TMDB unreachable) |
 | `homelab_unit_active{unit}` | ctdb, smbd, nmbd, winbind |
 | `homelab_health_last_run_seconds` | Staleness of the collector itself |
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph, Blue Iris recording, the
+"""Homelab health: Proxmox Samba/CTDB/CephFS/Ceph, PCIe errors, Blue Iris
+recording, Jellyfin (disk, VPN, metadata), the
 Home Assistant / Pi-hole / Vault / Bitwarden / registry endpoints, pods on both
 clusters, backups, secret sync, Argo CD, UniFi firmware flashes, and the
 SpaceTraders pods.
@@ -41,6 +42,10 @@ HINT = {
     "nmbd": "NetBIOS only, SMB unaffected; `systemctl start nmbd` on that host",
     "camera": "check the camera's feed in the Blue Iris UI (http://192.168.1.44:8081); a dead camera, a network drop, or Blue Iris itself stopped",
     "bi_rotation": "Blue Iris didn't move it to stored/; check Blue Iris clip storage settings, or move/delete the file by hand",
+    "jf_disk": "on prox01: `pct exec 109 -- du -xh -d1 /var | sort -rh`; last time it was /var/log (rsyslog imklog copying the host's kernel log)",
+    "jf_vpn": "on prox01: `pct exec 109 -- nordvpn status`; the watchdog (`journalctl -t nordvpn-watchdog`) should reconnect within 10 min; by hand: `nordvpn disconnect && nordvpn connect`",
+    "jf_meta": "metadata lookups need the VPN; after fixing it, run 'Search for missing metadata' on the Movies and Shows libraries",
+    "aer": "correctable PCIe errors; on prox01 it's the NVMe at c6:00.0: reseat it / fit its heatsink at the next maintenance window",
 }
 # blackbox `service` label -> (severity when down, what it means)
 PROBES = {
@@ -199,6 +204,43 @@ def evaluate():
     cores = per_host("homelab_samba_core_bytes")
     if cores:
         F.append("Samba cores: " + ", ".join(f"{h} {v / 1e6:.0f} MB" for h, v in sorted(cores.items())))
+
+    for h, v in per_host("homelab_pcie_aer_lines_5m").items():
+        if v >= 100:
+            bad(f"aer:{h}", "WARN", f"{h}: {int(v)} PCIe AER error lines in 5 min", "aer")
+
+    # ---- Jellyfin (LXC 109 jellyfin-ct) ----------------------------------------------
+    jf = {m["__name__"][len("homelab_jellyfin_"):]: v for m, v in hl
+          if m["__name__"].startswith("homelab_jellyfin_")}
+    if not jf:
+        bad("jf_metrics", "WARN", "no Jellyfin metrics (CT 109 moved, or homelab-health not updated on its host)")
+    elif jf.get("ct_running", 0) < 1:
+        bad("jf_ct", "CRIT", "Jellyfin container (CT 109, jellyfin-ct) is not running")
+    else:
+        if jf.get("up", 0) < 1:
+            bad("jf_up", "CRIT", "Jellyfin (192.168.1.101:8096) not answering /health")
+        free = jf.get("rootfs_free_ratio")
+        if free is not None and free < 0.05:
+            bad("jf_disk", "CRIT", f"Jellyfin CT root disk {100 * (1 - free):.0f}% full", "jf_disk")
+        elif free is not None and free < 0.15:
+            bad("jf_disk", "WARN", f"Jellyfin CT root disk {100 * (1 - free):.0f}% full", "jf_disk")
+        hs = jf.get("vpn_handshake_seconds", 0)
+        hs_age = now - hs if hs > 0 else None
+        if hs_age is None or hs_age > 20 * 60:
+            when = "never" if hs_age is None else f"{int(hs_age / 60)} min ago"
+            bad("jf_vpn", "WARN", f"Jellyfin's NordVPN tunnel is down (last handshake {when}); "
+                "it has no other way to the internet", "jf_vpn")
+        errs = jf.get("library_errors_1h", 0)
+        if errs >= 10:
+            bad("jf_meta", "WARN", f"Jellyfin: {int(errs)} failed library/metadata operations in the last hour"
+                + ("; TMDB unreachable from the CT" if jf.get("wan_ok", 1) < 1 else ""), "jf_meta")
+        flaps = jf.get("watchdog_reconnects_24h", 0)
+        if flaps > 3:
+            bad("jf_vpn_flap", "WARN", f"Jellyfin's VPN watchdog reconnected {int(flaps)}x in 24h (tunnel flapping)", "jf_vpn")
+        F.append("Jellyfin: " + ("up" if jf.get("up", 0) >= 1 else "DOWN")
+                 + (f", / {100 * (1 - free):.0f}% used" if free is not None else "")
+                 + (f", VPN handshake {int(hs_age)}s ago" if hs_age is not None else ", VPN down")
+                 + f", {int(flaps)} VPN reconnect(s)/24h")
 
     # ---- Ceph OSDs (mgr prometheus module) ------------------------------------------
     try:
