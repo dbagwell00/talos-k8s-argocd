@@ -41,9 +41,9 @@ The checks come from real incidents on this cluster:
   preceded past Samba incidents.
 - **Blue Iris cameras.** Blue Iris records every camera continuously to
   CephFS. A camera with no write for 5 minutes has stopped streaming or
-  recording. Also watched: alert images (AI/motion still firing) and old
-  files stuck in `new/` (rotation to `stored/` broken). The per-camera
-  bitrate is in the report. Camera names: AptDoor, BDPTZ, BPTZ, BackDoor,
+  recording. Also watched: old files stuck in `new/` (rotation to `stored/`
+  broken). The per-camera bitrate and the time of the last alert image are
+  in the report; no alerts just means nothing triggered, so it isn't flagged. Camera names: AptDoor, BDPTZ, BPTZ, BackDoor,
   DPTZ, FWide, FrontDoor, GWide, IGW, SWide.
 - **PCIe errors.** Correctable AER lines in each host's kernel log.
   prox01's NVMe link (`c6:00.0`) logs several a second; that flood once
