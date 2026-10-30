@@ -37,3 +37,47 @@ spec:
       storage: 100Ti
   volumeName: smb-mnt
   storageClassName: ""
+---
+# The media library (same share as smb-media in infrastructure/smb-csi), mounted
+# read-only and served at /media/. Its own PV because a PV binds to one claim.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: filebrowser-media
+  labels:
+    velero.io/exclude-from-backup: "true"
+spec:
+  capacity:
+    storage: 100Ti
+  accessModes:
+  - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+  - dir_mode=0555
+  - file_mode=0444
+  - vers=3.0
+  - uid=0
+  - gid=0
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: true
+    volumeHandle: filebrowser-media-unique
+    volumeAttributes:
+      source: "//smb.local/media"
+    nodeStageSecretRef:
+      name: samba-creds
+      namespace: media
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-media
+  namespace: filebrowser
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 100Ti
+  volumeName: filebrowser-media
+  storageClassName: ""
