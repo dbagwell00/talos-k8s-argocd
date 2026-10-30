@@ -1,6 +1,6 @@
 ---
 name: homelab-health
-description: Health of the whole homelab — Proxmox hosts, Samba/SMB, CTDB, CephFS, Ceph capacity, Blue Iris recording per camera, Home Assistant, Pi-hole, Vault (sealed?), Bitwarden, the registry, TLS certs, pods on both Kubernetes clusters, Velero backups, External Secrets sync, Argo CD apps, UniFi firmware upgrades, and the SpaceTraders Postgres, Redis, and agents. Use when the user asks whether anything in the homelab is broken or healthy, about any of those services, or about a homelab watch alert.
+description: Health of the whole homelab — Proxmox hosts, Samba/SMB, CTDB, CephFS, Ceph capacity, PCIe errors, Blue Iris recording per camera, Jellyfin (disk, VPN, metadata), Home Assistant, Pi-hole, Vault (sealed?), Bitwarden, the registry, TLS certs, pods on both Kubernetes clusters, Velero backups, External Secrets sync, Argo CD apps, UniFi firmware upgrades, and the SpaceTraders Postgres, Redis, and agents. Use when the user asks whether anything in the homelab is broken or healthy, about any of those services, or about a homelab watch alert.
 version: 1.0.0
 metadata:
   hermes:
@@ -45,6 +45,15 @@ The checks come from real incidents on this cluster:
   files stuck in `new/` (rotation to `stored/` broken). The per-camera
   bitrate is in the report. Camera names: AptDoor, BDPTZ, BPTZ, BackDoor,
   DPTZ, FWide, FrontDoor, GWide, IGW, SWide.
+- **PCIe errors.** Correctable AER lines in each host's kernel log.
+  prox01's NVMe link (`c6:00.0`) logs several a second; that flood once
+  filled Jellyfin's disk.
+- **Jellyfin** (LXC 109 `jellyfin-ct` on prox01, 192.168.1.101): up, root
+  disk, and its NordVPN tunnel. The tunnel is its only route to the internet
+  and once sat dead for 77 days unnoticed. A watchdog reconnects it within
+  10 min, so a tunnel down 20+ min, or reconnecting more than 3x a day,
+  means the watchdog isn't coping. Also flagged: 10+ failed metadata
+  lookups in an hour.
 - **Services** (blackbox probes): Home Assistant, Blue Iris web, Pi-hole
   (resolving *and* still blocking), Vault (a sealed Vault means no secret
   syncs anywhere; it needs a manual unseal), Bitwarden, the registry, and

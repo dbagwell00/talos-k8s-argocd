@@ -24,6 +24,12 @@
 #                              is "stopped streaming / not recording" with no BI
 #                              login. Also: alert JPEGs (AI/motion still firing) and
 #                              files stuck in new/ (rotation to stored/ broken).
+#   pcie aer                   correctable PCIe error lines in the kernel log; prox01's
+#                              NVMe link logs ~7/s, and they filled jellyfin-ct's disk.
+#   jellyfin (CT 109)          only on the host that owns the CT. Root disk (99% full
+#                              on 2026-10-30), the NordVPN tunnel handshake (its only
+#                              way out; dead for 77 days without anyone noticing),
+#                              its watchdog's reconnects, and failed metadata lookups.
 #
 # Read-only: it runs status commands and reads files, and changes nothing.
 set -u
@@ -137,6 +143,37 @@ if timeout -k 1 $T test -d "$bi/new"; then
   m "homelab_blueiris_new_oldest_seconds $(awk 'NR==1||$1<min{min=$1} END{printf "%d", min+0}' <<<"$listing")"
   help homelab_blueiris_alert_last_seconds "Unix mtime of the newest alert image (AI/motion triggers firing)."
   m "homelab_blueiris_alert_last_seconds $(timeout -k 1 15 find "$bi/alerts" -maxdepth 1 -type f -mmin -1440 -printf '%T@\n' 2>/dev/null | sort -n | tail -1 | cut -d. -f1 | grep . || echo 0)"
+fi
+
+# --- PCIe AER -------------------------------------------------------------------
+help homelab_pcie_aer_lines_5m "Kernel log lines from the PCIe AER driver in the last 5 minutes."
+m "homelab_pcie_aer_lines_5m $(journalctl -k --since -5min -q -o cat 2>/dev/null | grep -c 'AER:')"
+
+# --- Jellyfin (LXC 109) -----------------------------------------------------------
+# /etc/pve/lxc is the local node's directory, so this runs only where the CT lives.
+JF_CT=109
+if [ -e /etc/pve/lxc/$JF_CT.conf ]; then
+  help homelab_jellyfin_ct_running "1 if the Jellyfin container is running."
+  pct status $JF_CT 2>/dev/null | grep -q running && run=1 || run=0
+  m "homelab_jellyfin_ct_running $run"
+  if [ $run -eq 1 ]; then
+    help homelab_jellyfin_up "1 if Jellyfin's /health answers Healthy."
+    help homelab_jellyfin_rootfs_free_ratio "Free fraction of the container's root disk."
+    help homelab_jellyfin_vpn_handshake_seconds "Unix time of the NordLynx tunnel's last handshake (0 = none)."
+    help homelab_jellyfin_wan_ok "1 if the container reached TMDB (only possible through the VPN)."
+    help homelab_jellyfin_watchdog_reconnects_24h "NordVPN reconnects by nordvpn-watchdog in the last 24h."
+    help homelab_jellyfin_library_errors_1h "'Error while performing a library operation' lines in the last hour."
+    timeout -k 1 25 pct exec $JF_CT -- sh -s 2>/dev/null <<'EOF' | sed -n 's/^\([a-z0-9_]*\) \([0-9.e+-]*\)$/homelab_jellyfin_\1 \2/p'
+curl -s -m 5 http://127.0.0.1:8096/health | grep -q Healthy && echo "up 1" || echo "up 0"
+df -P / | awk 'NR==2 { print "rootfs_free_ratio", $4 / $2 }'
+echo "vpn_handshake_seconds $(wg show nordlynx latest-handshakes 2>/dev/null | awk '{ print $2 }' | grep . || echo 0)"
+curl -so /dev/null -m 8 -w '%{http_code}' https://api.themoviedb.org/3 | grep -q '^[23]' && echo "wan_ok 1" || echo "wan_ok 0"
+echo "watchdog_reconnects_24h $(journalctl -t nordvpn-watchdog --since -24h -q -o cat 2>/dev/null | grep -c reconnecting)"
+log=$(ls -t /var/log/jellyfin/*.log 2>/dev/null | head -1)
+since=$(date -u -d '-1 hour' '+[%Y-%m-%d %H:%M')
+echo "library_errors_1h $(awk -v s="$since" '$0 >= s' "$log" 2>/dev/null | grep -c 'Error while performing a library operation')"
+EOF
+  fi
 fi
 
 help homelab_health_last_run_seconds "Unix time this collector last finished."
