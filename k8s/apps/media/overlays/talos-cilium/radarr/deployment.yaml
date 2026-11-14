@@ -48,7 +48,7 @@ spec:
             - NET_ADMIN
       containers:
       - name: radarr
-        image: ghcr.io/linuxserver/radarr:develop
+        image: ghcr.io/linuxserver/radarr:develop-7.0.2.10888-ls277
         ports:
         - containerPort: 7878
           name: http
