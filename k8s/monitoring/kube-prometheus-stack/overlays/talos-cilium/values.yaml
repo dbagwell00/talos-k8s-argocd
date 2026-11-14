@@ -11,8 +11,7 @@ prometheus:
     externalLabels:
       cluster: talos-cilium
 
-    # Scaled to 0 for the CephFS -> RBD TSDB copy; set back to 1 after.
-    replicas: 0
+    replicas: 1
 
     # Storage for Prometheus TSDB. On ceph-rbd (krbd) since 2026-11-14:
     # a CephFS MDS blocklist on 2026-11-13 took Prometheus down for 28h.
