@@ -18,7 +18,7 @@ spec:
       annotations:
         # Bump to roll the pod after an nginx.conf change (nginx reads its
         # config only at startup).
-        config-rev: "8"
+        config-rev: "9"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false

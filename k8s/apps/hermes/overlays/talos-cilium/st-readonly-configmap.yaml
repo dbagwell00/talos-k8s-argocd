@@ -110,6 +110,17 @@ data:
         ceph_slow_ops            "max_over_time%28ceph_daemon_health_metrics%7Btype%3D%22SLOW_OPS%22%7D%5B15m%5D%29%20%3E%200";
       }
 
+      # Proxmox node-exporters, by host name: the fallback when Prometheus is
+      # down, so the homelab watch can still see Samba/CTDB/CephFS (2026-11-13:
+      # a dead Prometheus hid a real incident for 28h).
+      map $node_name $node_ip {
+        default "";
+        prox01 192.168.1.230;
+        prox02 192.168.1.232;
+        prox03 192.168.1.234;
+        prox04 192.168.1.236;
+      }
+
       server {
         listen 8080;
         default_type application/json;
@@ -176,6 +187,16 @@ data:
           if ($prom_query = "") { return 404 '{"error":"unknown query"}\n'; }
           set $up prom-prometheus.monitoring.svc.cluster.local;
           proxy_pass http://$up:9090/api/v1/query?query=$prom_query;
+        }
+
+        # One Proxmox host's node-exporter /metrics, fixed hosts only (see the map above).
+        location ~ "^/node/(?<nn>prox0[1-4])$" {
+          set $node_name $nn;
+          if ($node_ip = "") { return 404 '{"error":"unknown host"}\n'; }
+          default_type text/plain;
+          proxy_set_header Accept-Encoding "";
+          proxy_read_timeout 15s;
+          proxy_pass http://$node_ip:9100/metrics;
         }
 
         location / { return 404 '{"error":"not on the allowlist"}\n'; }
