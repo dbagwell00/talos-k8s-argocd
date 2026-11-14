@@ -1,10 +1,8 @@
 # MinIO as a lightweight S3 backend for Velero. Credentials come from the
 # minio-credentials Secret (rendered by ESO from Vault) — nothing secret here.
 #
-# Data lives on ceph-rbd (minio-data-rbd) since 2026-11-14. The CephFS PVC
-# below is the pre-migration copy, kept read-only as a fallback: a CephFS MDS
-# blocklist on 2026-11-13 showed CephFS mounts can die silently. Remove it
-# (and the migrate-from-cephfs init container) once the RBD copy is trusted.
+# Data lives on ceph-rbd since 2026-11-14 (moved off CephFS after a CephFS
+# MDS blocklist on 2026-11-13 showed CephFS mounts can die silently).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -17,19 +15,6 @@ spec:
   resources:
     requests:
       storage: 60Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-data
-  namespace: velero
-spec:
-  accessModes:
-  - ReadWriteMany
-  storageClassName: ceph-cephfs
-  resources:
-    requests:
-      storage: 50Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -60,29 +45,6 @@ spec:
       securityContext:
         runAsUser: 0
         runAsGroup: 0
-      initContainers:
-      # One-shot copy of the CephFS data onto the RBD volume. Recreate strategy
-      # means MinIO is fully stopped while this runs. Skipped once the marker exists.
-      - name: migrate-from-cephfs
-        image: busybox:1.36
-        command:
-        - sh
-        - -c
-        - |
-          set -e
-          if [ -e /new/.migrated-from-cephfs ]; then echo "already migrated"; exit 0; fi
-          rm -rf /new/lost+found
-          echo "src $(du -sh /old | cut -f1), $(find /old | wc -l) entries"
-          cp -a /old/. /new/
-          sync
-          echo "dst $(du -sh /new | cut -f1), $(find /new | wc -l) entries"
-          date -u > /new/.migrated-from-cephfs
-        volumeMounts:
-        - name: old-cephfs
-          mountPath: /old
-          readOnly: true
-        - name: data
-          mountPath: /new
       containers:
       - name: minio
         image: cgr.dev/chainguard/minio:latest@sha256:bd014394a80898e68c149f2311fdf8d5a2c2f3bb2c33b9327ae6d02b4b065ae1
@@ -133,10 +95,6 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: minio-data-rbd
-      - name: old-cephfs
-        persistentVolumeClaim:
-          claimName: minio-data
-          readOnly: true
 ---
 apiVersion: v1
 kind: Service
