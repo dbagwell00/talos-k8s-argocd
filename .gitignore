@@ -6,3 +6,5 @@ charts/
 *.unseal
 *vault-init*
 *.recovery-keys
+__pycache__/
+*.pyc
