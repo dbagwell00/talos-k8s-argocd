@@ -52,6 +52,7 @@ HINT = {
     "jf_disk": "on prox01: `pct exec 109 -- du -xh -d1 /var | sort -rh`; last time it was /var/log (rsyslog imklog copying the host's kernel log)",
     "jf_vpn": "on prox01: `pct exec 109 -- nordvpn status`; the watchdog (`journalctl -t nordvpn-watchdog`) should reconnect within 10 min; by hand: `nordvpn disconnect && nordvpn connect`",
     "jf_meta": "metadata lookups need the VPN; after fixing it, run 'Search for missing metadata' on the Movies and Shows libraries",
+    "csi_mount": "the pod can look Ready while its volume is dead. CephFS: `talosctl dmesg` on that node for `blocklisted` (recover_session=clean should reconnect within seconds; if not, cordon the node and delete the pod so the volume is re-staged elsewhere). SMB (cifs) 'Host is down': check each Proxmox host's CTDB IPs vs the :445 listener",
     "aer": "correctable PCIe errors; on prox01 it's the NVMe at c6:00.0: reseat it / fit its heatsink at the next maintenance window",
 }
 # blackbox `service` label -> (severity when down, what it means)
@@ -420,6 +421,24 @@ def evaluate():
                 f"PVC {where(m)}/{m.get('persistentvolumeclaim')} {100 * v:.0f}% full")
     except Exception as e:
         bad("k8s_metrics", "WARN", f"cluster pod metrics unavailable ({e})")
+
+    # ---- CSI volume mounts (csi-mount-probe DaemonSet, both clusters) ---------------
+    # Catches a Ready pod whose volume is dead: a blocklisted CephFS mount (EACCES)
+    # or an SMB mount stuck on "Host is down" (both 2026-11-13).
+    try:
+        for m, _ in prom("csi_mount_bad"):
+            fs = m.get("fstype", "?")
+            bad(f"csimount:{where(m)}/{m.get('pod')}/{m.get('volume')}", "CRIT",
+                f"{where(m)} pod {m.get('pod')}: its {fs} volume {m.get('volume')} on {m.get('node')} "
+                "has been unreadable for 3+ min (the pod may still look Ready)", "csi_mount")
+        ages = prom("csi_probe_age")
+        stale = sorted(f"{m.get('cluster', 'talos-cilium')}/{m.get('node')}" for m, v in ages if v > 300)
+        if stale:
+            bad("csi_probe_stale", "WARN", f"csi-mount-probe hasn't reported from {', '.join(stale)} for 5+ min")
+        if ages:
+            F.append(f"CSI volume probe: {len(ages)} nodes reporting")
+    except Exception as e:
+        bad("csi_probe", "WARN", f"CSI volume probe metrics unavailable ({e})")
 
     # ---- Backups, secrets, GitOps ----------------------------------------------------
     try:

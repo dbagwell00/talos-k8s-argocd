@@ -1,0 +1,15 @@
+# Scrapes the csi-mount-probe DaemonSet (k8s/monitoring/csi-mount-probe).
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: csi-mount-probe
+  namespace: monitoring
+  labels:
+    release: prometheus-talos-cilium
+spec:
+  selector:
+    matchLabels:
+      app: csi-mount-probe
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 30s

@@ -1,0 +1,147 @@
+# csi-mount-probe: is every CSI volume mounted into a pod actually readable?
+#
+# 2026-11-13: an MDS blocklist left CephFS mounts on talos-cilium-2 returning
+# EACCES while the pods using them stayed Ready (spacetraders-sim served errors
+# for 28h), and an SMB "Host is down" left qBittorrent failing quietly.
+# Kubernetes has no signal for "the volume behind this Ready pod is dead".
+#
+# Every 30 s, on every node, this lists the CSI publish mounts
+# (/var/lib/kubelet/pods/<uid>/volumes/kubernetes.io~csi/<pv>/mount) from the
+# host's mount table and lists each one's root with a 5 s budget. A probe still
+# stuck from the previous round is not re-spawned (a hung CephFS/CIFS mount
+# leaves processes in D state); it is just reported as hung.
+#
+#   csi_mount_healthy{node,uid,volume,fstype}  1 = readable, 0 = error or hung
+#   csi_mount_hung{node,uid,volume,fstype}     1 = the read did not return
+#   csi_mount_probe_last_run_seconds{node}     unix time of the last round
+#
+# `uid` joins to kube_pod_info{uid}, `volume` (the PV name) to
+# kube_persistentvolume_claim_ref{persistentvolume}.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csi-mount-probe
+  namespace: monitoring
+data:
+  probe.sh: |
+    #!/bin/sh
+    # busybox sh. Runs forever; busybox httpd serves /www/metrics.
+    mkdir -p /www /tmp/inflight /tmp/rc
+    httpd -p 9809 -h /www
+    while true; do
+      out=/www/.metrics.$$
+      {
+        echo "# HELP csi_mount_healthy 1 if the CSI volume mount's root could be listed within 5s."
+        echo "# TYPE csi_mount_healthy gauge"
+        echo "# HELP csi_mount_hung 1 if listing the mount did not return (probe still blocked)."
+        echo "# TYPE csi_mount_hung gauge"
+      } > "$out"
+      # mountinfo: field 5 = mount point; the fstype is the field after "-".
+      awk '{ for (i = 7; i <= NF; i++) if ($i == "-") { print $5, $(i + 1); break } }' /host/proc/1/mountinfo |
+      grep -E '^/var/lib/kubelet/pods/[^/]+/volumes/kubernetes\.io~csi/[^/]+/mount ' |
+      while read -r mp fstype; do
+        uid=${mp#/var/lib/kubelet/pods/}; uid=${uid%%/*}
+        vol=${mp#*/kubernetes.io~csi/}; vol=${vol%/mount}
+        key=$(echo "$uid$vol" | md5sum | cut -c1-16)
+        f=/tmp/inflight/$key
+        hung=0
+        if [ -f "$f" ] && kill -0 "$(cat "$f")" 2>/dev/null; then
+          hung=1                                   # still blocked from an earlier round
+        else
+          rm -f "/tmp/rc/$key"
+          ( ls -a "$mp" > /dev/null 2>&1; echo $? > "/tmp/rc/$key" ) &
+          echo $! > "$f"
+          i=0
+          while kill -0 "$(cat "$f")" 2>/dev/null && [ $i -lt 5 ]; do sleep 1; i=$((i + 1)); done
+          kill -0 "$(cat "$f")" 2>/dev/null && hung=1 || rm -f "$f"
+        fi
+        ok=0
+        [ $hung = 0 ] && [ "$(cat "/tmp/rc/$key" 2>/dev/null)" = 0 ] && ok=1
+        lbl="node=\"$NODE_NAME\",uid=\"$uid\",volume=\"$vol\",fstype=\"$fstype\""
+        echo "csi_mount_healthy{$lbl} $ok" >> "$out"
+        echo "csi_mount_hung{$lbl} $hung" >> "$out"
+      done
+      {
+        echo "# HELP csi_mount_probe_last_run_seconds Unix time the probe last finished a round."
+        echo "# TYPE csi_mount_probe_last_run_seconds gauge"
+        echo "csi_mount_probe_last_run_seconds{node=\"$NODE_NAME\"} $(date +%s)"
+      } >> "$out"
+      mv "$out" /www/metrics
+      sleep 30
+    done
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: csi-mount-probe
+  namespace: monitoring
+  labels:
+    app: csi-mount-probe
+spec:
+  selector:
+    matchLabels:
+      app: csi-mount-probe
+  template:
+    metadata:
+      labels:
+        app: csi-mount-probe
+    spec:
+      tolerations:
+      - operator: Exists
+      priorityClassName: system-node-critical
+      containers:
+      - name: probe
+        image: busybox:1.36
+        command: ["sh", "/probe/probe.sh"]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - name: metrics
+          containerPort: 9809
+        # root to read other pods' volume dirs under /var/lib/kubelet; no
+        # privileged mode, no writes to the host (both hostPaths are read-only).
+        securityContext:
+          runAsUser: 0
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+            add: ["DAC_READ_SEARCH", "DAC_OVERRIDE"]
+        resources:
+          requests:
+            cpu: 5m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
+        - name: probe
+          mountPath: /probe
+        - name: kubelet
+          mountPath: /var/lib/kubelet
+          readOnly: true
+          mountPropagation: HostToContainer
+        - name: host-proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: www
+          mountPath: /www
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: probe
+        configMap:
+          name: csi-mount-probe
+      - name: kubelet
+        hostPath:
+          path: /var/lib/kubelet
+      - name: host-proc
+        hostPath:
+          path: /proc
+      - name: www
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}

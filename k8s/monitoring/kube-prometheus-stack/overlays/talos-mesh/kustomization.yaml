@@ -12,3 +12,5 @@ helmCharts:
 
 resources:
 - namespace.yaml
+- ../../../csi-mount-probe/base
+- podmonitor-csi-mount-probe.yaml

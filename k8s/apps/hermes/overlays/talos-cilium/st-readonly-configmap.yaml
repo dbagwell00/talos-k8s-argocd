@@ -108,6 +108,8 @@ data:
         ceph_osd_up              "ceph_osd_up%20%2A%20on%20%28ceph_daemon%29%20group_left%20%28hostname%29%20ceph_osd_metadata";
         ceph_osd_in              "ceph_osd_in%20%2A%20on%20%28ceph_daemon%29%20group_left%20%28hostname%29%20ceph_osd_metadata";
         ceph_slow_ops            "max_over_time%28ceph_daemon_health_metrics%7Btype%3D%22SLOW_OPS%22%7D%5B15m%5D%29%20%3E%200";
+        csi_mount_bad            "%28max_over_time%28csi_mount_healthy%5B3m%5D%29%20%3D%3D%200%29%20%2A%20on%20%28uid%29%20group_left%20%28namespace%2C%20pod%29%20max%20by%20%28uid%2C%20namespace%2C%20pod%29%20%28kube_pod_info%29";
+        csi_probe_age            "time%28%29%20-%20max%20by%20%28cluster%2C%20node%29%20%28csi_mount_probe_last_run_seconds%29";
       }
 
       # Proxmox node-exporters, by host name: the fallback when Prometheus is
