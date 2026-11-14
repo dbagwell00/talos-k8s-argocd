@@ -11,28 +11,34 @@ prometheus:
     externalLabels:
       cluster: talos-cilium
 
-    # Storage for Prometheus TSDB
+    # Scaled to 0 for the CephFS -> RBD TSDB copy; set back to 1 after.
+    replicas: 0
+
+    # Storage for Prometheus TSDB. On ceph-rbd (krbd) since 2026-11-14:
+    # a CephFS MDS blocklist on 2026-11-13 took Prometheus down for 28h.
+    # The template name gives a new PVC (prometheus-db-rbd-prometheus-prom-prometheus-0);
+    # the old CephFS PVC (prometheus-prom-prometheus-db-...) is left in place.
     storageSpec:
       volumeClaimTemplate:
+        metadata:
+          name: prometheus-db-rbd
         spec:
-          storageClassName: ceph-cephfs
+          storageClassName: ceph-rbd
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 50Gi
+              storage: 60Gi
 
-    # Fix CephFS permissions (fsGroup not applied on CephFS mounts)
-    initContainers:
-      - name: fix-permissions
-        image: busybox:1.36
-        command: ["sh", "-c", "chown -R 1000:2000 /prometheus"]
-        volumeMounts:
-          - name: prometheus-prom-prometheus-db
-            mountPath: /prometheus
-            subPath: prometheus-db
-        securityContext:
-          runAsNonRoot: false
-          runAsUser: 0
+    # RBD honours fsGroup, so the old CephFS chown init container is gone.
+    # OnRootMismatch skips a recursive chgrp of the TSDB on every start.
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 2000
+      runAsNonRoot: true
+      fsGroup: 2000
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
 
     # Resource limits
     resources:
