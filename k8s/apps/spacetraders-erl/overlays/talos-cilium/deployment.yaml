@@ -47,7 +47,7 @@ spec:
         # CephFS mounts root-owned 755 and, unlike the RBD data volume, does not
         # take fsGroup: without this the recorder (uid 10001) cannot write a
         # byte (live 2026-10-12: 81 lines dropped in the first 30 s).
-        image: busybox
+        image: busybox:1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         command: ["sh", "-c", "chown 10001:10001 /record && chmod 2775 /record"]
         volumeMounts:
         - name: record
@@ -62,7 +62,7 @@ spec:
       # the node addresses too, and replies to Cilium's LB SNAT would go out
       # the VPN interface and never arrive.
       - name: fix-routes
-        image: busybox
+        image: busybox:1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         command:
         - sh
         - -c

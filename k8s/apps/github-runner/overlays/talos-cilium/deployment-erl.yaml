@@ -47,7 +47,7 @@ spec:
             memory: "2Gi"
             cpu: "2000m"
       - name: runner
-        image: myoung34/github-runner:latest
+        image: myoung34/github-runner:latest@sha256:2e980b3b44e3f853a403d8cf5bc941cf4a7cfbf98e56c79eb5a58a534601ddad
         securityContext:
           privileged: true
         env:

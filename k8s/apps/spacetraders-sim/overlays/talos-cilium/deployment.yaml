@@ -23,7 +23,7 @@ spec:
       - name: data-perms
         # CephFS mounts root-owned and ignores fsGroup (see spacetraders-erl
         # record-perms); nginx-unprivileged runs as uid 101.
-        image: busybox
+        image: busybox:1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         command: ["sh", "-c", "chown 101:101 /data && chmod 2775 /data"]
         volumeMounts:
         - name: data

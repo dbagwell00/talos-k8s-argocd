@@ -50,7 +50,7 @@ spec:
           value: "1.1.1.1"
         - name: LOG_LEVEL
           value: info
-        image: qmcgaw/gluetun:latest
+        image: qmcgaw/gluetun:latest@sha256:4af0c804003481e100180e1f8d4d5e9c48163fedc0f88d061881b615aef9d183
         imagePullPolicy: Always
         lifecycle:
           postStart:
@@ -90,7 +90,7 @@ spec:
         - |
           echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 || true
           echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 || true
-        image: busybox
+        image: busybox:1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         imagePullPolicy: Always
         name: disable-ipv6
         securityContext:
