@@ -8,6 +8,12 @@ SpaceTraders pods.
 Reads only the st-readonly gateway's fixed Prometheus queries plus the two
 agents' health views; holds no credentials and changes nothing.
 
+If Prometheus itself is unreachable, it says so loudly ("monitoring BLIND")
+and lists what is NOT being checked, then still runs the Proxmox / Jellyfin /
+Blue Iris checks from the hosts' node-exporters directly (st-readonly
+/node/<host>). On 2026-11-13 a dead Prometheus hid a real Samba/CephFS
+incident for 28h behind a one-line "query failed (502)".
+
   health.py report   full status, always prints (morning digest, "how's the lab")
   health.py check    only prints on change: a new problem, a resolved one, or
                      a reminder for one still open (CRIT every 6h, WARN daily).
@@ -19,6 +25,7 @@ pass arguments -- so the file name picks the mode.
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -71,9 +78,41 @@ def get(path, timeout=20):
         return json.load(r)
 
 
+BLIND = False  # set when Prometheus is unreachable; prom() then fails fast
+
+# What only Prometheus can tell us; listed in the BLIND alert so it's clear what isn't checked.
+BLIND_SKIPPED = ("Kubernetes pods/PVCs on both clusters, Velero backups, Argo CD, ESO, "
+                 "service probes (Home Assistant, Pi-hole, Vault, Bitwarden, Blue Iris web), "
+                 "TLS certs, Ceph OSD latency, CTDB recovery history, host disk space, SpaceTraders")
+
+
 def prom(name):
+    if BLIND:
+        raise RuntimeError("Prometheus unreachable")
     d = get("/prom/" + name)
     return [(r["metric"], float(r["value"][1])) for r in d["data"]["result"]]
+
+
+_SERIES = re.compile(r'^(homelab_[A-Za-z0-9_]+)(?:\{(.*)\})?\s+(\S+)')
+_LABEL = re.compile(r'([A-Za-z_][A-Za-z0-9_]*)="((?:[^"\\]|\\.)*)"')
+
+
+def node_homelab(ip, name):
+    """homelab_* series straight from one host's node-exporter, shaped like prom() results."""
+    with urllib.request.urlopen(f"{BASE}/node/{name}", timeout=15) as r:
+        text = r.read().decode("utf-8", "replace")
+    out = []
+    for line in text.splitlines():
+        m = _SERIES.match(line)
+        if not m:
+            continue
+        labels = dict(_LABEL.findall(m.group(2) or ""))
+        labels.update(__name__=m.group(1), instance=f"{ip}:9100")
+        try:
+            out.append((labels, float(m.group(3))))
+        except ValueError:
+            pass
+    return out
 
 
 def evaluate():
@@ -90,12 +129,27 @@ def evaluate():
         return P, F
 
     # ---- Proxmox hosts --------------------------------------------------------
+    global BLIND
+    BLIND = False
     try:
         up = {host(m["instance"]): v for m, v in prom("host_up")}
         hl = prom("homelab")
     except Exception as e:
-        bad("prometheus", "CRIT", f"Prometheus query failed ({e})")
-        return P, F
+        BLIND = True
+        up, hl = {}, []
+        for ip, name in HOSTS.items():
+            try:
+                hl += node_homelab(ip, name)
+                up[name] = 1
+            except Exception:
+                up[name] = 0
+        reached = sum(1 for v in up.values() if v >= 1)
+        bad("prometheus", "CRIT",
+            f"monitoring BLIND: Prometheus unreachable ({e}). NOT being checked: {BLIND_SKIPPED}. "
+            + (f"Proxmox, Jellyfin and Blue Iris checks below come straight from {reached}/{len(HOSTS)} hosts."
+               if reached else "The hosts' node-exporters didn't answer either, so nothing could be checked."))
+        if not reached:
+            return P, F
     for h in HOSTS.values():
         if up.get(h, 0) < 1:
             bad(f"down:{h}", "CRIT", f"{h} node-exporter not answering (host down or off the network?)")
@@ -264,7 +318,8 @@ def evaluate():
         F.append(f"Ceph OSDs: {len(lat)}, median apply latency {med:.0f} ms; slowest "
                  + ", ".join(f"{d}@{h} {v:.0f} ms" for d, (v, h) in worst))
     except Exception as e:
-        bad("ceph_osd_metrics", "WARN", f"Ceph OSD metrics unavailable ({e}); is the mgr prometheus module on?")
+        if not BLIND:  # in blind mode the BLIND alert already covers it
+            bad("ceph_osd_metrics", "WARN", f"Ceph OSD metrics unavailable ({e}); is the mgr prometheus module on?")
 
     # ---- Ceph capacity --------------------------------------------------------
     pools = {}
@@ -283,8 +338,15 @@ def evaluate():
     # ---- Blue Iris (clips on CephFS) ---------------------------------------------
     try:
         # skip unlabeled series: an empty listing (CephFS hung) once produced camera=""
-        ages = {m["camera"]: v for m, v in prom("bi_camera_age") if m.get("camera")}
-        rates = {m["camera"]: v for m, v in prom("bi_bitrate") if m.get("camera")}
+        if BLIND:  # raw last-write gauge from the hosts; newest across hosts, no bitrate
+            last = {}
+            for m, v in by.get("homelab_blueiris_camera_last_write_seconds", []):
+                if m.get("camera"):
+                    last[m["camera"]] = max(last.get(m["camera"], 0), v)
+            ages, rates = {c: now - t for c, t in last.items()}, {}
+        else:
+            ages = {m["camera"]: v for m, v in prom("bi_camera_age") if m.get("camera")}
+            rates = {m["camera"]: v for m, v in prom("bi_bitrate") if m.get("camera")}
     except Exception as e:
         ages, rates = {}, {}
         bad("bi_metrics", "WARN", f"Blue Iris metrics unavailable ({e})")
@@ -308,6 +370,9 @@ def evaluate():
     if oldest and now_s - oldest > 2 * 86400:
         since = datetime.fromtimestamp(oldest).astimezone().strftime("%b %-d")
         bad("bi_rotation", "WARN", f"a Blue Iris segment from {since} is still in new/", "bi_rotation")
+
+    if BLIND:  # everything below needs Prometheus; the BLIND alert already lists it
+        return P, F
 
     # ---- Services (blackbox probes) -------------------------------------------
     try:
