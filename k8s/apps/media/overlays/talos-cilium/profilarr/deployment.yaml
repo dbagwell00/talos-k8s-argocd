@@ -24,7 +24,7 @@ spec:
         effect: NoSchedule
       initContainers:
       - name: fix-routes
-        image: busybox
+        image: busybox:1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         command:
         - sh
         - -c
@@ -47,7 +47,7 @@ spec:
             - NET_ADMIN
       containers:
       - name: profilarr
-        image: santiagosayshey/profilarr:latest
+        image: santiagosayshey/profilarr:latest@sha256:8033e9c6d6995f37625afeb93d7020e99566f549ae83b65f1db7e11048952d0f
         ports:
         - containerPort: 6868
           name: http

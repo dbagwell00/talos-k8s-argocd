@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       initContainers:
       - name: fix-routes
-        image: busybox
+        image: busybox:1.38.0@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         command:
         - sh
         - -c
@@ -45,7 +45,7 @@ spec:
             - NET_ADMIN
       containers:
       - name: flaresolverr
-        image: ghcr.io/flaresolverr/flaresolverr:latest
+        image: ghcr.io/flaresolverr/flaresolverr:v3.5.2@sha256:c80ae007ce2ccdcd217a12426e4f039ef763ff90738c808d38810c3e59323767
         ports:
         - containerPort: 8191
           name: http
