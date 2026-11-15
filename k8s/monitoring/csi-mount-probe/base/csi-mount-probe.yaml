@@ -42,21 +42,25 @@ data:
       while read -r mp fstype; do
         uid=${mp#/var/lib/kubelet/pods/}; uid=${uid%%/*}
         vol=${mp#*/kubernetes.io~csi/}; vol=${vol%/mount}
-        key=$(echo "$uid$vol" | md5sum | cut -c1-16)
+        key="${uid}_${vol}"                        # both are [a-z0-9-] already
         f=/tmp/inflight/$key
         hung=0
-        if [ -f "$f" ] && kill -0 "$(cat "$f")" 2>/dev/null; then
+        pid=
+        [ -f "$f" ] && read -r pid < "$f"
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
           hung=1                                   # still blocked from an earlier round
         else
           rm -f "/tmp/rc/$key"
           ( ls -a "$mp" > /dev/null 2>&1; echo $? > "/tmp/rc/$key" ) &
-          echo $! > "$f"
+          pid=$!
+          echo "$pid" > "$f"
           i=0
-          while kill -0 "$(cat "$f")" 2>/dev/null && [ $i -lt 5 ]; do sleep 1; i=$((i + 1)); done
-          kill -0 "$(cat "$f")" 2>/dev/null && hung=1 || rm -f "$f"
+          while kill -0 "$pid" 2>/dev/null && [ $i -lt 5 ]; do sleep 1; i=$((i + 1)); done
+          kill -0 "$pid" 2>/dev/null && hung=1 || rm -f "$f"
         fi
-        ok=0
-        [ $hung = 0 ] && [ "$(cat "/tmp/rc/$key" 2>/dev/null)" = 0 ] && ok=1
+        ok=0 rc=
+        [ -f "/tmp/rc/$key" ] && read -r rc < "/tmp/rc/$key"
+        [ $hung = 0 ] && [ "$rc" = 0 ] && ok=1
         lbl="node=\"$NODE_NAME\",uid=\"$uid\",volume=\"$vol\",fstype=\"$fstype\""
         echo "csi_mount_healthy{$lbl} $ok" >> "$out"
         echo "csi_mount_hung{$lbl} $hung" >> "$out"
@@ -110,12 +114,13 @@ spec:
           capabilities:
             drop: ["ALL"]
             add: ["DAC_READ_SEARCH", "DAC_OVERRIDE"]
+        # No CPU limit: average use is ~1-7m, but each round forks a burst of
+        # processes that tripped CFS throttling (CPUThrottlingHigh) at 100m.
         resources:
           requests:
             cpu: 5m
             memory: 16Mi
           limits:
-            cpu: 100m
             memory: 64Mi
         volumeMounts:
         - name: probe
