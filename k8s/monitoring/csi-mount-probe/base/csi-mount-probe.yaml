@@ -50,8 +50,14 @@ data:
         if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
           hung=1                                   # still blocked from an earlier round
         else
-          rm -f "/tmp/rc/$key"
-          ( ls -a "$mp" > /dev/null 2>&1; echo $? > "/tmp/rc/$key" ) &
+          rm -f "/tmp/rc/$key" "/tmp/rc/$key.err"
+          # busybox ls lstat()s every entry, so a temp file renamed away between
+          # readdir and lstat (e.g. Hermes's .gateway_state_*.tmp) fails it with
+          # ENOENT. That race isn't a dead volume: ignore errors that are only
+          # ENOENT. Dead CephFS/SMB gives EACCES/EIO/ESTALE/EHOSTDOWN instead.
+          ( ls -a "$mp" > /dev/null 2> "/tmp/rc/$key.err"; rc=$?
+            [ $rc != 0 ] && [ -s "/tmp/rc/$key.err" ] && ! grep -qv 'No such file or directory' "/tmp/rc/$key.err" && rc=0
+            echo $rc > "/tmp/rc/$key" ) &
           pid=$!
           echo "$pid" > "$f"
           i=0
@@ -89,6 +95,9 @@ spec:
     metadata:
       labels:
         app: csi-mount-probe
+      annotations:
+        # The script is read once at start: bump this when probe.sh changes.
+        csi-mount-probe/script-rev: "2"
     spec:
       tolerations:
       - operator: Exists
