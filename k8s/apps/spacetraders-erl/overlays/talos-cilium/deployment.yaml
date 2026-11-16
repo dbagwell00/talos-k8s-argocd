@@ -165,6 +165,10 @@ spec:
         # os:putenv since then, re-applied after every restart until now.
         - name: ST_POLICY_TRADER_SCOUT
           value: "on"
+        # Lattice next-lot price model (spacetraders-erlang #471): exact step from
+        # one quote pair; 5-17x more accurate than push depth on 11-08 holdout.
+        - name: ST_POLICY_LATTICE_PRICE
+          value: "on"
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
