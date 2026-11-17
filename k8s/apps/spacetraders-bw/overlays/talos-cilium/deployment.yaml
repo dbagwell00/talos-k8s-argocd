@@ -212,6 +212,10 @@ spec:
         # one quote pair; 5-17x more accurate than push depth on 11-08 holdout.
         - name: ST_POLICY_LATTICE_PRICE
           value: "on"
+        # Contract chain (spacetraders-erlang #476): negotiate like whater -- a declined offer no longer
+        # holds the slot, an idle probe flies to the HQ to ask. Sim: gate 2-3 h earlier on 4/5 worlds.
+        - name: ST_POLICY_CONTRACT_CHAIN
+          value: "on"
         # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
         # pre-gate the gate may spend down to max(150k, 50k + the pending light
         # hauler) instead of trade working capital + hull reserve (580-700k).
