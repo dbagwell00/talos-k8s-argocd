@@ -169,6 +169,10 @@ spec:
         # one quote pair; 5-17x more accurate than push depth on 11-08 holdout.
         - name: ST_POLICY_LATTICE_PRICE
           value: "on"
+        # Contract chain (spacetraders-erlang #476): negotiate like whater -- a declined offer no longer
+        # holds the slot, an idle probe flies to the HQ to ask. Sim: gate 2-3 h earlier on 4/5 worlds.
+        - name: ST_POLICY_CONTRACT_CHAIN
+          value: "on"
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
