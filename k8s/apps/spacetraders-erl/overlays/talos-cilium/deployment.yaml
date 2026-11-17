@@ -173,6 +173,10 @@ spec:
         # holds the slot, an idle probe flies to the HQ to ask. Sim: gate 2-3 h earlier on 4/5 worlds.
         - name: ST_POLICY_CONTRACT_CHAIN
           value: "on"
+        # Post-gate per-trip cash share (spacetraders-erlang #478), hourly switchback A/B per
+        # runs/calib/trip-budget-prereg.md until 2026-11-19 00:00 UTC; then on or off by the result.
+        - name: ST_POLICY_TRADE_TRIP_BUDGET
+          value: "switchback"
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
