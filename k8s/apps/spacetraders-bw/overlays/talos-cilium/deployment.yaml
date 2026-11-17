@@ -220,6 +220,12 @@ spec:
         # runs/calib/trip-budget-prereg.md until 2026-11-19 00:00 UTC; then on or off by the result.
         - name: ST_POLICY_TRADE_TRIP_BUDGET
           value: "switchback"
+        # Roam baskets + whater's floored trade call price (spacetraders-erlang #481), hourly switchbacks per
+        # runs/calib/roam-basket-prereg.md and call-price-prereg.md until 2026-11-19 12:00 UTC.
+        - name: ST_POLICY_ROAM_BASKET
+          value: "switchback"
+        - name: ST_POLICY_CALL_PRICE
+          value: "switchback"
         # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
         # pre-gate the gate may spend down to max(150k, 50k + the pending light
         # hauler) instead of trade working capital + hull reserve (580-700k).
