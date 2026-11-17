@@ -216,6 +216,10 @@ spec:
         # holds the slot, an idle probe flies to the HQ to ask. Sim: gate 2-3 h earlier on 4/5 worlds.
         - name: ST_POLICY_CONTRACT_CHAIN
           value: "on"
+        # Post-gate per-trip cash share (spacetraders-erlang #478), hourly switchback A/B per
+        # runs/calib/trip-budget-prereg.md until 2026-11-19 00:00 UTC; then on or off by the result.
+        - name: ST_POLICY_TRADE_TRIP_BUDGET
+          value: "switchback"
         # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
         # pre-gate the gate may spend down to max(150k, 50k + the pending light
         # hauler) instead of trade working capital + hull reserve (580-700k).
