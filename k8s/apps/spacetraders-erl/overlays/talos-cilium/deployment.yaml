@@ -173,6 +173,10 @@ spec:
         # holds the slot, an idle probe flies to the HQ to ask. Sim: gate 2-3 h earlier on 4/5 worlds.
         - name: ST_POLICY_CONTRACT_CHAIN
           value: "on"
+        # Learn what charted yards sell: crawl + read at chart time (spacetraders-erlang #482). GOB found its
+        # first bulk yard at h40.6 on 11-15 while 500+ known yards sat unread.
+        - name: ST_POLICY_CRAWL_YARDS
+          value: "on"
         # Post-gate per-trip cash share (spacetraders-erlang #478), hourly switchback A/B per
         # runs/calib/trip-budget-prereg.md until 2026-11-19 00:00 UTC; then on or off by the result.
         - name: ST_POLICY_TRADE_TRIP_BUDGET
