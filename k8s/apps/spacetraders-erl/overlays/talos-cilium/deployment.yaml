@@ -173,6 +173,8 @@ spec:
         # holds the slot, an idle probe flies to the HQ to ask. Sim: gate 2-3 h earlier on 4/5 worlds.
         - name: ST_POLICY_CONTRACT_CHAIN
           value: "on"
+        - name: ST_POLICY_WHATER_SIZING
+          value: "on"
         # Learn what charted yards sell: crawl + read at chart time (spacetraders-erlang #482). GOB found its
         # first bulk yard at h40.6 on 11-15 while 500+ known yards sat unread.
         - name: ST_POLICY_CRAWL_YARDS
@@ -180,13 +182,13 @@ spec:
         # Post-gate per-trip cash share (spacetraders-erlang #478), hourly switchback A/B per
         # runs/calib/trip-budget-prereg.md until 2026-11-19 00:00 UTC; then on or off by the result.
         - name: ST_POLICY_TRADE_TRIP_BUDGET
-          value: "switchback"
-        # Roam baskets + whater's floored trade call price (spacetraders-erlang #481), hourly switchbacks per
-        # runs/calib/roam-basket-prereg.md and call-price-prereg.md until 2026-11-19 12:00 UTC.
+          value: "on"
+        # whater-core live crossover (spacetraders-erlang #486, runs/calib/whater-core-crossover-prereg.md):
+        # period 1 = GOBBLICIDE core, BLOODWATTLE control; swap after 24 h. Call price stays off (stopped for harm).
         - name: ST_POLICY_ROAM_BASKET
-          value: "switchback"
+          value: "on"
         - name: ST_POLICY_CALL_PRICE
-          value: "switchback"
+          value: "off"
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
