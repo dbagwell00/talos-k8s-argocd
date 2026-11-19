@@ -59,6 +59,15 @@ prometheus:
           batchSendDeadline: 5s
           minBackoff: 30ms
           maxBackoff: 100ms
+        # Don't ship recording-rule outputs (name:with:colons). The central
+        # Prometheus runs the same cluster-aware kube-prometheus rules over the
+        # raw mesh series, so it already produces identical series; sending
+        # ours too collides -> "400 out of order sample" -> whole batch counted
+        # failed -> PrometheusRemoteStorageFailures (critical).
+        writeRelabelConfigs:
+          - sourceLabels: [__name__]
+            regex: ".+:.+"
+            action: drop
 
   # LoadBalancer service for Prometheus
   service:
