@@ -188,7 +188,14 @@ spec:
         - name: ST_POLICY_ROAM_BASKET
           value: "on"
         - name: ST_POLICY_CALL_PRICE
-          value: "off"
+          value: "whater"
+        # 2026-11-19: everything built switched on (user); st_brake (#489) guards the freeze failure.
+        - name: ST_POLICY_MARKET_BRAKE
+          value: "on"
+        - name: ST_POLICY_SELL_DRAIN
+          value: "on"
+        - name: ST_POLICY_BUY_DRAIN
+          value: "on"
         # 32 dated from the first deploy (a handful of hulls). Live 2026-10-07 at
         # 1,155 hulls: 32/32 running, ~320 queued, trade orders waiting ~95 s for
         # a slot, probes (class 2) admitted 25 times in 19 h. The limiter is the
