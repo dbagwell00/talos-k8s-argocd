@@ -217,7 +217,7 @@ spec:
         - name: ST_POLICY_CONTRACT_CHAIN
           value: "on"
         - name: ST_POLICY_WHATER_SIZING
-          value: "off"
+          value: "on"
         # Learn what charted yards sell: crawl + read at chart time (spacetraders-erlang #482). GOB found its
         # first bulk yard at h40.6 on 11-15 while 500+ known yards sat unread.
         - name: ST_POLICY_CRAWL_YARDS
@@ -225,13 +225,20 @@ spec:
         # Post-gate per-trip cash share (spacetraders-erlang #478), hourly switchback A/B per
         # runs/calib/trip-budget-prereg.md until 2026-11-19 00:00 UTC; then on or off by the result.
         - name: ST_POLICY_TRADE_TRIP_BUDGET
-          value: "off"
+          value: "on"
         # whater-core live crossover (spacetraders-erlang #486, runs/calib/whater-core-crossover-prereg.md):
         # period 1 = GOBBLICIDE core, BLOODWATTLE control; swap after 24 h. Call price stays off (stopped for harm).
         - name: ST_POLICY_ROAM_BASKET
-          value: "off"
+          value: "on"
         - name: ST_POLICY_CALL_PRICE
-          value: "off"
+          value: "whater"
+        # 2026-11-19: everything built switched on (user); st_brake (#489) guards the freeze failure.
+        - name: ST_POLICY_MARKET_BRAKE
+          value: "on"
+        - name: ST_POLICY_SELL_DRAIN
+          value: "on"
+        - name: ST_POLICY_BUY_DRAIN
+          value: "on"
         # TB1's gate floor (spacetraders-erlang st_capital:tb1_gate_floor/0):
         # pre-gate the gate may spend down to max(150k, 50k + the pending light
         # hauler) instead of trade working capital + hull reserve (580-700k).
