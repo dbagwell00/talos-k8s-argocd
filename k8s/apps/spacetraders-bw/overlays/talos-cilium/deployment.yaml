@@ -241,6 +241,8 @@ spec:
           value: "1"
         - name: ST_POLICY_RANK_PER_CALL
           value: "on"
+        - name: ST_BASKET_FRESH_MIN
+          value: "240"
         - name: ST_POLICY_WHATER_LAMBDA_SATURATED
           value: "on"
         - name: ST_POLICY_PARK_ON_NO_ROUTE
