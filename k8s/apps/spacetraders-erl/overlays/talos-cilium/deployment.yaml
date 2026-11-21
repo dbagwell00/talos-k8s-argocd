@@ -188,7 +188,16 @@ spec:
         - name: ST_POLICY_ROAM_BASKET
           value: "on"
         - name: ST_POLICY_CALL_PRICE
-          value: "whater"
+          value: "off"
+        # 2026-11-21: whater filters fixed for our market picture (spacetraders-erlang #506).
+        - name: ST_POLICY_TRIP_CALL_CHARGE
+          value: "off"
+        - name: ST_WHATER_ROAM_MARGIN_PCT
+          value: "6"
+        - name: ST_POLICY_WHATER_LAMBDA_SATURATED
+          value: "on"
+        - name: ST_POLICY_PARK_ON_NO_ROUTE
+          value: "on"
         # 2026-11-19: everything built switched on (user); st_brake (#489) guards the freeze failure.
         - name: ST_POLICY_MARKET_BRAKE
           value: "on"
